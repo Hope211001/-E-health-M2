@@ -1,13 +1,14 @@
 import React from 'react';
 import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
-import { Link } from 'expo-router';
+import { Link,useRouter } from 'expo-router';
 
 export default function App() {
+  const router = useRouter();
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Gestion de Patients</Text>
       <Text style={styles.subtitle}>Projet de Pascaline (M2 GL)</Text>
-      
+
       {/* <TouchableOpacity style={styles.button} onPress={() => alert('Bientôt : Connexion Firebase')}>
         <Text style={styles.buttonText}>Se Connecter</Text>
       </TouchableOpacity> */}
@@ -17,6 +18,16 @@ export default function App() {
           <Text style={styles.buttonText}>Se Connecter</Text>
         </TouchableOpacity>
       </Link>
+
+         <TouchableOpacity
+          onPress={() => router.push('/register')}
+          style={{ marginTop: 20 }}
+        >
+          <Text style={{ color: '#3498db', textAlign: 'center' }}>
+            Pas de compte ? Créer un compte
+          </Text>
+        </TouchableOpacity>
+
 
     </View>
   );

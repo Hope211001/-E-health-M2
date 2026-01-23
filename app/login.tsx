@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, View, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { auth, db } from '../api/firebase'; 
+import { auth, db } from '../api/firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
-import { useRouter } from 'expo-router'; 
+import { useRouter } from 'expo-router';
 
 export default function LoginScreen() {
-  const router = useRouter(); 
+  const router = useRouter();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -26,16 +26,16 @@ export default function LoginScreen() {
 
       // 2. Récupérer le rôle dans Firestore (Utilise bien la variable db importée)
       const userDoc = await getDoc(doc(db, "users", user.uid));
-      
+
       if (userDoc.exists()) {
         const userData = userDoc.data();
         const role = userData.role;
 
         // 3. Redirection selon le rôle
         if (role === 'medecin') {
-          router.replace('/medecin_home');
-        } else {
-          router.replace('/patient_home');
+          router.replace('/(medecin)'); // Entre dans le dossier groupe médecin
+        } else if (role === 'patient') {
+          router.replace('/(patient)'); // Entre dans le dossier groupe patient
         }
       } else {
         alert("ID recherché dans Firestore : " + user.uid);
@@ -50,8 +50,8 @@ export default function LoginScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Connexion</Text>
-      
-      <TextInput 
+
+      <TextInput
         style={styles.input}
         placeholder="Email"
         value={email}
@@ -60,7 +60,7 @@ export default function LoginScreen() {
         keyboardType="email-address"
       />
 
-      <TextInput 
+      <TextInput
         style={styles.input}
         placeholder="Mot de passe"
         value={password}
@@ -72,8 +72,8 @@ export default function LoginScreen() {
         {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Se connecter</Text>}
       </TouchableOpacity>
 
-      <TouchableOpacity 
-        onPress={() => router.push('/register')} 
+      <TouchableOpacity
+        onPress={() => router.push('/register')}
         style={{ marginTop: 20 }}
       >
         <Text style={{ color: '#3498db', textAlign: 'center' }}>

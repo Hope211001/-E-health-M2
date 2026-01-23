@@ -1,40 +1,19 @@
+// app/(medecin)/_layout.tsx
 import { Tabs } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons'; // Pour les icônes
+import { Ionicons } from '@expo/vector-icons';
 
-export default function MedecinTabLayout() {
+export default function MedecinLayout() {
   return (
     <Tabs screenOptions={{ 
-      tabBarActiveTintColor: '#3498db', // Couleur de l'onglet actif (bleu)
-      headerShown: true,               // Afficher le titre en haut
+      tabBarActiveTintColor: '#3498db',
+      headerShown: true, // On garde celui-là pour avoir "Accueil" écrit proprement
     }}>
+      <Tabs.Screen name="index" options={{ title: 'Accueil', tabBarIcon: ({color}) => <Ionicons name="home" size={24} color={color} /> }} />
+      <Tabs.Screen name="patients" options={{ title: 'Mes Patients', tabBarIcon: ({color}) => <Ionicons name="people" size={24} color={color} /> }} />
+      <Tabs.Screen name="profil" options={{ title: 'Profil', tabBarIcon: ({color}) => <Ionicons name="person" size={24} color={color} /> }} />
       
-      {/* Premier onglet : Dashboard */}
-      <Tabs.Screen
-        name="index" // Correspond au fichier index.tsx
-        options={{
-          title: 'Accueil',
-          tabBarIcon: ({ color }) => <Ionicons name="home" size={24} color={color} />,
-        }}
-      />
-
-      {/* Deuxième onglet : Patients */}
-      <Tabs.Screen
-        name="patients" // Correspond au fichier patients.tsx
-        options={{
-          title: 'Mes Patients',
-          tabBarIcon: ({ color }) => <Ionicons name="people" size={24} color={color} />,
-        }}
-      />
-
-      {/* Troisième onglet : Profil */}
-      <Tabs.Screen
-        name="profil" // Correspond au fichier profil.tsx
-        options={{
-          title: 'Profil',
-          tabBarIcon: ({ color }) => <Ionicons name="person" size={24} color={color} />,
-        }}
-      />
-
+      {/* CETTE LIGNE CACHE L'ONGLET AJOUT_ORDONNANCE DU MENU DU BAS */}
+      <Tabs.Screen name="ajout_ordonnance" options={{ href: null }} /> 
     </Tabs>
   );
 }

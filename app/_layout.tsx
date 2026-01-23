@@ -1,15 +1,14 @@
+// app/_layout.tsx
 import { Stack } from 'expo-router';
 
 export default function RootLayout() {
   return (
-    <Stack screenOptions={{ 
-      headerStyle: { backgroundColor: '#3498db' },
-      headerTintColor: '#fff',
-      headerTitleStyle: { fontWeight: 'bold' },
-    }}>
-      {/* Tu peux définir des titres spécifiques par route ici si besoin */}
-      <Stack.Screen name="index" options={{ title: 'Connexion' }} />
-      <Stack.Screen name="medecin_home" options={{ title: 'Tableau de bord' }} />
+    <Stack>
+      {/* On cache le header pour l'écran de login */}
+      <Stack.Screen name="index" options={{ headerShown: false }} />
+      {/* ON CACHE LE HEADER ICI pour ne plus voir la flèche et "(medecin)" */}
+      <Stack.Screen name="(medecin)" options={{ headerShown: false }} />
+      <Stack.Screen name="(patient)" options={{ headerShown: false }} />
     </Stack>
   );
 }

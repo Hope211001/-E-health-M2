@@ -45,3 +45,37 @@ export const createPrescription = async (patientId: string, doctorId: string, me
     throw error;
   }
 };
+
+
+/**
+ * Utilitaire : Génère un code aléatoire (ex: P-4821)
+ */
+const generateAccessCode = () => {
+  const code = Math.floor(1000 + Math.random() * 9000); // 4 chiffres
+  return `P-${code}`;
+};
+
+// 3. Fonction pour créer un patient avec un code d'accès auto-généré
+export const createPatient = async (nom: string, email: string , doctorId:string) => {
+  try {
+    const accessCode = generateAccessCode(); // Génération automatique
+
+    // On ajoute le patient dans la collection "users"
+    // Note : Dans un vrai projet Auth, on utiliserait une Cloud Function pour créer le compte Auth.
+    // Ici, on stocke les infos dans Firestore pour permettre l'accès.
+    const docRef = await addDoc(collection(db, "users"), {
+      nom: nom,
+      email: email,
+      role: "patient",
+      doctorId: doctorId, // <--- On enregistre quel médecin a créé ce patient
+      accessCode: accessCode, // Ce code servira de mot de passe initial
+      dateCreation: serverTimestamp(),
+      firstLogin: true // Pour savoir s'il doit changer son mot de passe plus tard
+    });
+
+    return { id: docRef.id, accessCode }; // On retourne le code pour l'afficher au médecin
+  } catch (error) {
+    console.error("Erreur service createPatient:", error);
+    throw error;
+  }
+};

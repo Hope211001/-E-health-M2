@@ -11,7 +11,7 @@ import {
 import { db } from '../../api/firebase'; // Import de la base de données Firestore
 import { collection, query, where, getDocs } from 'firebase/firestore'; // Fonctions Firestore
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { Link,useRouter } from 'expo-router';
 
 // Définition du type Patient (Bonne pratique pour le développement pro)
 interface Patient {
@@ -105,9 +105,12 @@ export default function PatientsList() {
       )}
 
       {/* Bouton flottant pour ajouter un patient (Facultatif) */}
-      <TouchableOpacity style={styles.fab}>
-        <Ionicons name="add" size={30} color="#fff" />
-      </TouchableOpacity>
+
+      <Link href="/(medecin)/patient/add-patient" asChild>
+        <TouchableOpacity style={styles.fab}>
+          <Ionicons name="add" size={30} color="#fff" />
+        </TouchableOpacity>
+       </Link>
     </View>
   );
 }

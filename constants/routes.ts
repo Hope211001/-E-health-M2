@@ -5,8 +5,13 @@ export const APP_ROUTES = {
   MEDECIN: {
     REGISTER: "/(medecin)/register-medecin",
     HOME: "/(medecin)",
-    LISTE_PATIENTS: "/(medecin)/patients",
-    AJOUT_ORDONNANCE: "/(medecin)/ajout_ordonnance",
+    PATIENT: {
+      LISTE:"/(medecin)/patient/list-patient",
+    },
+    ORDONNANCE:{
+      ADD:"/(medecin)/ordonnance/add-ordonnance",
+      LISTE: "/(medecin)/ordonnance/list-ordonnance",
+    },
     PROFIL: "/(medecin)/profil",
   },
   PATIENT: {

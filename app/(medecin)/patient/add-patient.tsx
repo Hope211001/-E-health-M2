@@ -15,7 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 // 1. On importe 'auth' depuis ta config firebase pour avoir l'utilisateur courant
 import { auth } from '../../../api/firebase'; 
-import { createPatient } from '../../../api/servicePatient';
+// import { createPatient } from '../../../api/patientService';
 
 export default function AddPatientScreen() {
     const router = useRouter();
@@ -26,39 +26,39 @@ export default function AddPatientScreen() {
     const [isLoading, setIsLoading] = useState(false);
 
     // Fonction de validation et soumission
-    const handleCreate = async () => {
-        if (!nom || !email) {
-            Alert.alert("Erreur", "Veuillez remplir tous les champs.");
-            return;
-        }
+    // const handleCreate = async () => {
+    //     if (!nom || !email) {
+    //         Alert.alert("Erreur", "Veuillez remplir tous les champs.");
+    //         return;
+    //     }
 
-        // 2. Vérification que le médecin est bien connecté
-        const user = auth.currentUser;
-        if (!user) {
-            Alert.alert("Erreur", "Vous n'êtes pas connecté. Impossible de créer un patient.");
-            return;
-        }
+    //     // 2. Vérification que le médecin est bien connecté
+    //     const user = auth.currentUser;
+    //     if (!user) {
+    //         Alert.alert("Erreur", "Vous n'êtes pas connecté. Impossible de créer un patient.");
+    //         return;
+    //     }
 
-        setIsLoading(true);
-        try {
-            // 3. On passe l'ID du médecin connecté (user.uid)
-            const result = await createPatient(nom, email, user.uid);
+    //     setIsLoading(true);
+    //     try {
+    //         // 3. On passe l'ID du médecin connecté (user.uid)
+    //         // const result = await createPatient(nom, email, user.uid);
 
-            // Succès : On affiche le code généré au médecin
-            Alert.alert(
-                "Patient créé avec succès !",
-                `Voici le code d'accès à donner au patient :\n\nCODE : ${result.accessCode}`,
-                [
-                    { text: "OK", onPress: () => router.back() } 
-                ]
-            );
-        } catch (error) {
-            console.error(error);
-            Alert.alert("Erreur", "Impossible de créer le patient. Vérifiez votre connexion.");
-        } finally {
-            setIsLoading(false);
-        }
-    };
+    //         // Succès : On affiche le code généré au médecin
+    //         Alert.alert(
+    //             "Patient créé avec succès !",
+    //             // `Voici le code d'accès à donner au patient :\n\nCODE : ${result.accessCode}`,
+    //             [
+    //                 { text: "OK", onPress: () => router.back() } 
+    //             ]
+    //         );
+    //     } catch (error) {
+    //         console.error(error);
+    //         Alert.alert("Erreur", "Impossible de créer le patient. Vérifiez votre connexion.");
+    //     } finally {
+    //         setIsLoading(false);
+    //     }
+    // };
 
     return (
         <KeyboardAvoidingView
@@ -106,7 +106,7 @@ export default function AddPatientScreen() {
 
                 <TouchableOpacity
                     style={[styles.button, isLoading && styles.buttonDisabled]}
-                    onPress={handleCreate}
+                    // onPress={handleCreate}
                     disabled={isLoading}
                 >
                     {isLoading ? (

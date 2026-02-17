@@ -1,122 +1,169 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { auth, db } from '../../api/firebase'; // Ajuste le chemin selon ton dossier api
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, SafeAreaView, StatusBar } from 'react-native';
+import { auth, db } from '../../api/firebase'; 
 import { doc, getDoc } from 'firebase/firestore';
-import { useRouter } from 'expo-router';
+import { useRouter, Href } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { Medecin } from '../../types/collection';
+import { APP_ROUTES } from '../../constants/routes';
 
 export default function MedecinDashboard() {
-  const [doctorData, setDoctorData] = useState<any>(null);
+  const [doctorData, setDoctorData] = useState<Medecin | null>(null);
+  const [stats, setStats] = useState({ patients: 0, ordonnances: 0 });
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  // 1. Récupérer les infos du médecin connecté
   useEffect(() => {
-    const fetchDoctorInfo = async () => {
+    const loadDashboardData = async () => {
       try {
         const user = auth.currentUser;
-        if (user) {
-          const docRef = doc(db, "users", user.uid);
-          const docSnap = await getDoc(docRef);
-          if (docSnap.exists()) {
-            setDoctorData(docSnap.data());
-          }
+        if (!user) return;
+
+        const docRef = doc(db, "medecins", user.uid);
+        const docSnap = await getDoc(docRef);
+        
+        if (docSnap.exists()) {
+          setDoctorData(docSnap.data() as Medecin);
+          setStats({ patients: 12, ordonnances: 5 }); 
         }
       } catch (error) {
-        console.error("Erreur lors de la récupération :", error);
+        console.error("Erreur Dashboard:", error);
       } finally {
         setLoading(false);
       }
     };
-
-    fetchDoctorInfo();
+    loadDashboardData();
   }, []);
 
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#3498db" />
+        <ActivityIndicator size="large" color="#7C3AED" />
       </View>
     );
   }
 
   return (
-    <ScrollView style={styles.container}>
-      {/* Header avec Bienvenue */}
-      <View style={styles.header}>
-        <Text style={styles.welcomeText}>Bonjour,</Text>
-        <Text style={styles.doctorName}>Dr. {doctorData?.nom || 'Chargement...'}</Text>
-      </View>
-
-      {/* Statistiques rapides */}
-      <View style={styles.statsContainer}>
-        <View style={[styles.statCard, { backgroundColor: '#3498db' }]}>
-          <Text style={styles.statNumber}>12</Text>
-          <Text style={styles.statLabel}>Patients suivis</Text>
+    <View style={styles.mainContainer}>
+      <StatusBar barStyle="dark-content" />
+      <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+        
+        {/* Header de bienvenue */}
+        <View style={styles.header}>
+          <View>
+            <Text style={styles.welcomeText}>Bienvenue,</Text>
+            <Text style={styles.doctorName}>
+              Dr. {doctorData?.email.split('@')[0]} 
+            </Text>
+            <Text style={styles.speciality}>{doctorData?.specialite?.join(', ')}</Text>
+          </View>
+          <TouchableOpacity 
+            style={styles.profileButton}
+            onPress={() => router.push(APP_ROUTES.MEDECIN.PROFIL as Href)}
+          >
+            <Ionicons name="person-circle" size={54} color="#7C3AED" />
+          </TouchableOpacity>
         </View>
-        <View style={[styles.statCard, { backgroundColor: '#2ecc71' }]}>
-          <Text style={styles.statNumber}>5</Text>
-          <Text style={styles.statLabel}>Ordonnances actives</Text>
+
+        {/* Section Stats */}
+        <View style={styles.statsContainer}>
+          <View style={[styles.statCard, { backgroundColor: '#7C3AED' }]}>
+            <Ionicons name="people-outline" size={24} color="#FFF" />
+            <Text style={styles.statNumber}>{stats.patients}</Text>
+            <Text style={styles.statLabel}>Patients suivis</Text>
+          </View>
+          <View style={[styles.statCard, { backgroundColor: '#A78BFA' }]}>
+            <Ionicons name="document-text-outline" size={24} color="#FFF" />
+            <Text style={styles.statNumber}>{stats.ordonnances}</Text>
+            <Text style={styles.statLabel}>Ordonnances</Text>
+          </View>
         </View>
-      </View>
 
-      {/* Menu d'actions rapides */}
-      <Text style={styles.sectionTitle}>Actions rapides</Text>
-      
-      <View style={styles.menuGrid}>
-        <TouchableOpacity 
-          style={styles.menuItem}
-          onPress={() => router.push('/(medecin)/patients')} // On ira créer cette page après
-        >
-          <Ionicons name="people" size={32} color="#3498db" />
-          <Text style={styles.menuText}>Mes Patients</Text>
-        </TouchableOpacity>
+        <Text style={styles.sectionTitle}>Gestion Cabinet</Text>
+        
+        <View style={styles.menuGrid}>
+          {/* Correction des routes ici selon tes constantes */}
+          <TouchableOpacity 
+            style={styles.menuItem}
+            onPress={() => router.push(APP_ROUTES.MEDECIN.PATIENT.LISTE as Href)}
+          >
+            <View style={[styles.iconCircle, { backgroundColor: '#EDE9FE' }]}>
+              <Ionicons name="people" size={28} color="#7C3AED" />
+            </View>
+            <Text style={styles.menuText}>Mes Patients</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity 
-          style={styles.menuItem}
-          onPress={() => router.push('/(medecin)/ajout_ordonnance')} // On ira créer cette page après
-        >
-          <Ionicons name="add-circle" size={32} color="#e67e22" />
-          <Text style={styles.menuText}>Nouvelle Ordonnance</Text>
-        </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.menuItem}
+            onPress={() => router.push(APP_ROUTES.MEDECIN.ORDONNANCE.ADD as Href)}
+          >
+            <View style={[styles.iconCircle, { backgroundColor: '#F0FDF4' }]}>
+              <Ionicons name="add-circle" size={28} color="#10B981" />
+            </View>
+            <Text style={styles.menuText}>Prescrire</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity style={styles.menuItem}>
+            <View style={[styles.iconCircle, { backgroundColor: '#EFF6FF' }]}>
+              <Ionicons name="calendar" size={28} color="#3B82F6" />
+            </View>
+            <Text style={styles.menuText}>Rendez-vous</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity style={styles.menuItem}>
-          <Ionicons name="calendar" size={32} color="#9b59b6" />
-          <Text style={styles.menuText}>Rendez-vous</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.menuItem}>
-          <Ionicons name="settings" size={32} color="#7f8c8d" />
-          <Text style={styles.menuText}>Paramètres</Text>
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
+          <TouchableOpacity style={styles.menuItem} onPress={() => auth.signOut()}>
+            <View style={[styles.iconCircle, { backgroundColor: '#FEF2F2' }]}>
+              <Ionicons name="log-out" size={28} color="#EF4444" />
+            </View>
+            <Text style={styles.menuText}>Déconnexion</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8f9fa', padding: 20 },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  header: { marginTop: 40, marginBottom: 30 },
-  welcomeText: { fontSize: 18, color: '#7f8c8d' },
-  doctorName: { fontSize: 26, fontWeight: 'bold', color: '#2c3e50' },
-  statsContainer: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 30 },
-  statCard: { flex: 1, padding: 20, borderRadius: 15, marginHorizontal: 5, elevation: 4 },
-  statNumber: { fontSize: 24, fontWeight: 'bold', color: '#fff' },
-  statLabel: { fontSize: 12, color: '#fff', marginTop: 5 },
-  sectionTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 15, color: '#34495e' },
+  mainContainer: { flex: 1, backgroundColor: '#F5F3FF' },
+  scrollContainer: { padding: 20, paddingBottom: 40 },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F5F3FF' },
+  header: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    marginBottom: 30,
+    marginTop: 10
+  },
+  welcomeText: { fontSize: 16, color: '#64748B' },
+  doctorName: { fontSize: 26, fontWeight: 'bold', color: '#1E293B' },
+  speciality: { fontSize: 14, color: '#7C3AED', fontWeight: '600', marginTop: 2 },
+  profileButton: { padding: 2 },
+  statsContainer: { flexDirection: 'row', gap: 15, marginBottom: 30 },
+  statCard: { 
+    flex: 1, 
+    padding: 18, 
+    borderRadius: 24, 
+    elevation: 4, 
+    shadowColor: '#7C3AED', 
+    shadowOpacity: 0.2, 
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 }
+  },
+  statNumber: { fontSize: 24, fontWeight: 'bold', color: '#fff', marginTop: 10 },
+  statLabel: { fontSize: 12, color: '#fff', opacity: 0.9, fontWeight: '500' },
+  sectionTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 15, color: '#1E293B', marginLeft: 5 },
   menuGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
   menuItem: { 
     width: '48%', 
     backgroundColor: '#fff', 
     padding: 20, 
-    borderRadius: 15, 
+    borderRadius: 24, 
     alignItems: 'center', 
     marginBottom: 15,
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.05,
+    shadowRadius: 5
   },
-  menuText: { marginTop: 10, fontWeight: '600', color: '#2c3e50' }
+  iconCircle: { width: 55, height: 55, borderRadius: 20, justifyContent: 'center', alignItems: 'center', marginBottom: 12 },
+  menuText: { fontWeight: 'bold', color: '#475569', fontSize: 14 }
 });

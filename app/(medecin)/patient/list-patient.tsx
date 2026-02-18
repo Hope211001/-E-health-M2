@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
-import { 
-  StyleSheet, View, Text, FlatList, TextInput, 
-  TouchableOpacity, ActivityIndicator, SafeAreaView 
+import React, { useEffect, useState, useCallback } from 'react';
+import {
+  StyleSheet, View, Text, FlatList, TextInput,
+  TouchableOpacity, ActivityIndicator, RefreshControl
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, Href } from 'expo-router';
 import { auth } from '../../../api/firebase';
@@ -13,13 +14,10 @@ import { APP_ROUTES } from '../../../constants/routes';
 export default function ListePatients() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false); // ✅ Pour le "Pull to refresh"
   const [patients, setPatients] = useState<Patient[]>([]);
   const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-
-  useEffect(() => {
-    fetchPatients();
-  }, []);
 
   const fetchPatients = async () => {
     try {
@@ -30,19 +28,29 @@ export default function ListePatients() {
         setFilteredPatients(data);
       }
     } catch (error) {
-      console.error(error);
+      console.error("Erreur lors de la récupération des patients:", error);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
-  // Logique de recherche locale par Numero de Patient
+  useEffect(() => {
+    fetchPatients();
+  }, []);
+
+  // ✅ Fonction pour rafraîchir manuellement la liste
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchPatients();
+  }, []);
+
   const handleSearch = (text: string) => {
     setSearchQuery(text);
     if (text.trim() === '') {
       setFilteredPatients(patients);
     } else {
-      const filtered = patients.filter(p => 
+      const filtered = patients.filter(p =>
         p.numeroPatient.toLowerCase().includes(text.toLowerCase()) ||
         p.email.toLowerCase().includes(text.toLowerCase())
       );
@@ -51,10 +59,10 @@ export default function ListePatients() {
   };
 
   const renderPatientItem = ({ item }: { item: Patient }) => (
-    <TouchableOpacity 
+    <TouchableOpacity
       style={styles.patientCard}
       onPress={() => {
-        // Optionnel : rediriger vers le détail ou directement vers nouvelle ordonnance
+        // Redirection vers le détail du patient ou ordonnance
         router.push(APP_ROUTES.MEDECIN.ORDONNANCE.ADD as Href);
       }}
     >
@@ -63,7 +71,7 @@ export default function ListePatients() {
           {item.email.substring(0, 2).toUpperCase()}
         </Text>
       </View>
-      
+
       <View style={styles.patientInfo}>
         <Text style={styles.numeroPatient}>{item.numeroPatient}</Text>
         <Text style={styles.patientEmail}>{item.email}</Text>
@@ -77,10 +85,19 @@ export default function ListePatients() {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header & Recherche */}
       <View style={styles.header}>
-        <Text style={styles.title}>Mes Patients</Text>
+        <View style={styles.titleRow}>
+          <Text style={styles.title}>Mes Patients</Text>
+          {/* Optionnel: Petit bouton '+' aussi dans le header */}
+          <TouchableOpacity
+            onPress={() => router.push(APP_ROUTES.MEDECIN.PATIENT.ADD)}
+          >
+            <Ionicons name="person-add-outline" size={24} color="#7C3AED" />
+          </TouchableOpacity>
+        </View>
+
         <View style={styles.searchContainer}>
           <Ionicons name="search" size={20} color="#94A3B8" style={styles.searchIcon} />
           <TextInput
@@ -105,6 +122,9 @@ export default function ListePatients() {
           keyExtractor={(item) => item.userId}
           renderItem={renderPatientItem}
           contentContainerStyle={styles.listContent}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#7C3AED']} />
+          }
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <Ionicons name="people-outline" size={64} color="#E2E8F0" />
@@ -113,6 +133,16 @@ export default function ListePatients() {
           }
         />
       )}
+
+      {/* ✅ BOUTON FLOTTANT (FAB) POUR AJOUTER UN PATIENT */}
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => router.push("/(medecin)/patients/add" as Href)} // Ajuste la route selon ton fichier
+        activeOpacity={0.8}
+      >
+        <Ionicons name="add" size={30} color="#FFF" />
+        <Text style={styles.fabText}>Ajouter</Text>
+      </TouchableOpacity>
     </SafeAreaView>
   );
 }
@@ -120,24 +150,25 @@ export default function ListePatients() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFC' },
   header: { padding: 20, backgroundColor: '#FFF', borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
-  title: { fontSize: 24, fontWeight: 'bold', color: '#1E293B', marginBottom: 15 },
-  searchContainer: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    backgroundColor: '#F1F5F9', 
-    paddingHorizontal: 15, 
+  titleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
+  title: { fontSize: 24, fontWeight: 'bold', color: '#1E293B' },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 15,
     borderRadius: 12,
     height: 50
   },
   searchIcon: { marginRight: 10 },
   searchInput: { flex: 1, fontSize: 16, color: '#1E293B' },
-  listContent: { padding: 20 },
-  patientCard: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    backgroundColor: '#FFF', 
-    padding: 15, 
-    borderRadius: 16, 
+  listContent: { padding: 20, paddingBottom: 100 }, // ✅ Padding extra pour ne pas cacher le dernier item derrière le FAB
+  patientCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF',
+    padding: 15,
+    borderRadius: 16,
     marginBottom: 12,
     elevation: 2,
     shadowColor: '#000',
@@ -145,27 +176,51 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 }
   },
-  avatarContainer: { 
-    width: 50, 
-    height: 50, 
-    borderRadius: 25, 
-    backgroundColor: '#EDE9FE', 
-    justifyContent: 'center', 
-    alignItems: 'center' 
+  avatarContainer: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#EDE9FE',
+    justifyContent: 'center',
+    alignItems: 'center'
   },
   avatarText: { color: '#7C3AED', fontWeight: 'bold', fontSize: 16 },
   patientInfo: { flex: 1, marginLeft: 15 },
   numeroPatient: { fontSize: 16, fontWeight: 'bold', color: '#1E293B' },
   patientEmail: { fontSize: 14, color: '#64748B', marginTop: 2 },
-  badge: { 
-    alignSelf: 'flex-start', 
-    backgroundColor: '#F0FDF4', 
-    paddingHorizontal: 8, 
-    paddingVertical: 2, 
-    borderRadius: 6, 
-    marginTop: 5 
+  badge: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#F0FDF4',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+    marginTop: 5
   },
   badgeText: { color: '#10B981', fontSize: 11, fontWeight: 'bold' },
   emptyContainer: { alignItems: 'center', marginTop: 100 },
-  emptyText: { marginTop: 10, color: '#94A3B8', fontSize: 16 }
+  emptyText: { marginTop: 10, color: '#94A3B8', fontSize: 16 },
+
+  // ✅ STYLES DU BOUTON FLOTTANT (FAB)
+  fab: {
+    position: 'absolute',
+    bottom: 30,
+    right: 20,
+    backgroundColor: '#7C3AED',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 30,
+    elevation: 5,
+    shadowColor: '#7C3AED',
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 4 },
+  },
+  fabText: {
+    color: '#FFF',
+    fontWeight: 'bold',
+    marginLeft: 8,
+    fontSize: 16,
+  }
 });

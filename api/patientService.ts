@@ -19,7 +19,6 @@ export const patientService = {
     return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Patient));
   },
 
-
   async getPatientsByMedecin(medecinId: string): Promise<Patient[]> {
     const patientsRef = collection(db, "patients");
     // On filtre les patients dont le medecinTraitantId correspond au médecin connecté

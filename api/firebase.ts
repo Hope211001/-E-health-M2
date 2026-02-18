@@ -2,14 +2,13 @@ import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { 
   initializeAuth, 
-  getAuth,
   //@ts-ignore
   getReactNativePersistence, 
-  Auth 
+  getAuth 
 } from 'firebase/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Ta configuration Firebase
+// Configuration via variables d'environnement (Très bien !)
 const firebaseConfig = {
   apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
@@ -19,22 +18,19 @@ const firebaseConfig = {
   appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
 };
 
-// 1. Initialisation de l'App (Singleton)
+// 1. Initialisation de l'App
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 
-// 2. Initialisation de l'Auth avec persistance AsyncStorage
-let auth: Auth;
+// 2. Initialisation de l'Auth avec Persistance
+// On vérifie si l'auth est déjà initialisée pour éviter l'erreur "Auth has already been initialized"
+const auth = (() => {
+  const existingAuth = getAuth(app);
+  if (existingAuth) return existingAuth;
 
-try {
-  // On essaie de récupérer l'auth déjà initialisée
-  auth = getAuth(app);
-} catch (e) {
-  // Si elle n'existe pas encore (premier chargement), on l'initialise
-  // C'est ICI qu'on injecte AsyncStorage pour React Native
-  auth = initializeAuth(app, {
+  return initializeAuth(app, {
     persistence: getReactNativePersistence(AsyncStorage),
   });
-}
+})();
 
 // 3. Initialisation de Firestore
 const db = getFirestore(app);

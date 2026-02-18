@@ -1,168 +1,147 @@
 import React, { useState } from 'react';
 import {
-    View,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    StyleSheet,
-    Alert,
-    ActivityIndicator,
-    KeyboardAvoidingView,
-    Platform
+  StyleSheet,
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
+  Alert,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  TouchableWithoutFeedback,
+  Keyboard
 } from 'react-native';
-import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { Href, useRouter } from 'expo-router';
+import { authController } from '../../../controller/authController';
+import { APP_ROUTES } from '../../../constants/routes';
+import { auth } from '../../../api/firebase';
 
-// 1. On importe 'auth' depuis ta config firebase pour avoir l'utilisateur courant
-import { auth } from '../../../api/firebase'; 
-// import { createPatient } from '../../../api/patientService';
+export default function RegisterPatient() {
+  const router = useRouter();
+  const [form, setForm] = useState({ email: '', tel: '', pass: '', confirm: '' });
+  const [loading, setLoading] = useState(false);
 
-export default function AddPatientScreen() {
-    const router = useRouter();
+  const handleRegister = async () => {
+    // Petit check de sécurité côté client
+    if (!form.email || !form.pass) {
+      Alert.alert("Erreur", "Veuillez remplir les informations de connexion.");
+      return;
+    }
 
-    // États du formulaire (Seulement nom et email, l'ID médecin est automatique)
-    const [nom, setNom] = useState('');
-    const [email, setEmail] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
+    setLoading(true);
+    const res = await authController.handlePatientRegistration(form.email, form.pass, form.confirm, form.tel, auth.currentUser?.uid!,);
+    setLoading(false);
 
-    // Fonction de validation et soumission
-    // const handleCreate = async () => {
-    //     if (!nom || !email) {
-    //         Alert.alert("Erreur", "Veuillez remplir tous les champs.");
-    //         return;
-    //     }
+    if (res.success) {
+      router.replace(APP_ROUTES.MEDECIN.ORDONNANCE.ADD as Href);
+    } else {
+      Alert.alert("Erreur", res.message);
+    }
+  };
 
-    //     // 2. Vérification que le médecin est bien connecté
-    //     const user = auth.currentUser;
-    //     if (!user) {
-    //         Alert.alert("Erreur", "Vous n'êtes pas connecté. Impossible de créer un patient.");
-    //         return;
-    //     }
-
-    //     setIsLoading(true);
-    //     try {
-    //         // 3. On passe l'ID du médecin connecté (user.uid)
-    //         // const result = await createPatient(nom, email, user.uid);
-
-    //         // Succès : On affiche le code généré au médecin
-    //         Alert.alert(
-    //             "Patient créé avec succès !",
-    //             // `Voici le code d'accès à donner au patient :\n\nCODE : ${result.accessCode}`,
-    //             [
-    //                 { text: "OK", onPress: () => router.back() } 
-    //             ]
-    //         );
-    //     } catch (error) {
-    //         console.error(error);
-    //         Alert.alert("Erreur", "Impossible de créer le patient. Vérifiez votre connexion.");
-    //     } finally {
-    //         setIsLoading(false);
-    //     }
-    // };
-
-    return (
-        <KeyboardAvoidingView
-            behavior={Platform.OS === "ios" ? "padding" : "height"}
-            style={styles.container}
+  return (
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={{ flex: 1 }}
+    >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <ScrollView
+          contentContainerStyle={styles.container}
+          keyboardShouldPersistTaps="handled"
         >
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={24} color="#333" />
-                </TouchableOpacity>
-                <Text style={styles.title}>Nouveau Patient</Text>
+          <View style={styles.inner}>
+            <Text style={styles.title}>Espace Patient</Text>
+            <Text style={styles.subtitle}>Créez votre dossier médical sécurisé</Text>
+
+            <View style={styles.card}>
+              <TextInput
+                style={styles.input}
+                placeholder="Email"
+                value={form.email}
+                onChangeText={(v) => setForm({ ...form, email: v })}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Téléphone"
+                value={form.tel}
+                onChangeText={(v) => setForm({ ...form, tel: v })}
+                keyboardType="phone-pad"
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Mot de passe"
+                secureTextEntry
+                value={form.pass}
+                onChangeText={(v) => setForm({ ...form, pass: v })}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Confirmer mot de passe"
+                secureTextEntry
+                value={form.confirm}
+                onChangeText={(v) => setForm({ ...form, confirm: v })}
+              />
+
+              <TouchableOpacity
+                style={styles.btn}
+                onPress={handleRegister}
+                disabled={loading}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#FFF" />
+                ) : (
+                  <Text style={styles.btnText}>S'inscrire comme Patient</Text>
+                )}
+              </TouchableOpacity>
             </View>
-
-            <View style={styles.form}>
-                <Text style={styles.label}>Nom complet</Text>
-                <View style={styles.inputContainer}>
-                    <Ionicons name="person-outline" size={20} color="#7f8c8d" />
-                    <TextInput
-                        style={styles.input}
-                        placeholder="Ex: Jean Dupont"
-                        value={nom}
-                        onChangeText={setNom}
-                    />
-                </View>
-
-                <Text style={styles.label}>Adresse Email</Text>
-                <View style={styles.inputContainer}>
-                    <Ionicons name="mail-outline" size={20} color="#7f8c8d" />
-                    <TextInput
-                        style={styles.input}
-                        placeholder="Ex: jean.dupont@email.com"
-                        value={email}
-                        onChangeText={setEmail}
-                        keyboardType="email-address"
-                        autoCapitalize="none"
-                    />
-                </View>
-
-                <View style={styles.infoBox}>
-                    <Ionicons name="information-circle" size={24} color="#3498db" />
-                    <Text style={styles.infoText}>
-                        Un code d'accès sera généré automatiquement. Vous devrez le communiquer au patient pour sa première connexion.
-                    </Text>
-                </View>
-
-                <TouchableOpacity
-                    style={[styles.button, isLoading && styles.buttonDisabled]}
-                    // onPress={handleCreate}
-                    disabled={isLoading}
-                >
-                    {isLoading ? (
-                        <ActivityIndicator color="#fff" />
-                    ) : (
-                        <Text style={styles.buttonText}>Créer le dossier patient</Text>
-                    )}
-                </TouchableOpacity>
-            </View>
-        </KeyboardAvoidingView>
-    );
+          </View>
+        </ScrollView>
+      </TouchableWithoutFeedback>
+    </KeyboardAvoidingView>
+  );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#f8f9fa' },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: 20,
-        backgroundColor: '#fff',
-        elevation: 2,
-        paddingTop: 50, 
-    },
-    backButton: { marginRight: 15 },
-    title: { fontSize: 20, fontWeight: 'bold', color: '#2c3e50' },
-    form: { padding: 20 },
-    label: { fontSize: 16, color: '#34495e', marginBottom: 8, fontWeight: '600' },
-    inputContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#fff',
-        borderRadius: 10,
-        paddingHorizontal: 15,
-        height: 50,
-        marginBottom: 20,
-        borderWidth: 1,
-        borderColor: '#bdc3c7',
-    },
-    input: { flex: 1, marginLeft: 10, fontSize: 16 },
-    infoBox: {
-        flexDirection: 'row',
-        backgroundColor: '#e1f5fe',
-        padding: 15,
-        borderRadius: 10,
-        marginBottom: 30,
-        alignItems: 'center',
-    },
-    infoText: { flex: 1, marginLeft: 10, color: '#2980b9', fontSize: 14 },
-    button: {
-        backgroundColor: '#2ecc71',
-        height: 55,
-        borderRadius: 12,
-        justifyContent: 'center',
-        alignItems: 'center',
-        elevation: 3,
-    },
-    buttonDisabled: { backgroundColor: '#95a5a6' },
-    buttonText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
+  container: {
+    flexGrow: 1,
+    backgroundColor: '#F0F9FF', // Fond bleu clair patient
+    paddingBottom: 40
+  },
+  inner: {
+    padding: 25,
+    flex: 1,
+    justifyContent: 'center',
+  },
+  title: { fontSize: 26, fontWeight: 'bold', color: '#0369A1', textAlign: 'center' },
+  subtitle: { textAlign: 'center', color: '#64748B', marginBottom: 30 },
+  card: {
+    backgroundColor: '#FFF',
+    padding: 20,
+    borderRadius: 20,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  input: {
+    backgroundColor: '#F8FAFC',
+    padding: 15,
+    borderRadius: 12,
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: '#E2E8F0'
+  },
+  btn: {
+    backgroundColor: '#0EA5E9',
+    padding: 18,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginTop: 10
+  },
+  btnText: { color: '#FFF', fontWeight: 'bold', fontSize: 16 }
 });

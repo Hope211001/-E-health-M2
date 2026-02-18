@@ -30,7 +30,7 @@ export default function RegisterPatient() {
     }
 
     setLoading(true);
-    const res = await authController.handlePatientRegistration(form.email, form.pass, form.confirm, form.tel);
+    const res = await authController.handlePatientRegistration(form.email, form.pass, form.confirm, form.tel , '');
     setLoading(false);
 
     if (res.success) {

@@ -1,10 +1,10 @@
 import { authService } from '../api/authService';
 
 export const authController = {
-  handlePatientRegistration: async (email: string, pass: string, confirm: string, tel: string) => {
+  handlePatientRegistration: async (email: string, pass: string, confirm: string, tel: string , medecinId: string) => {
     try {
       if (pass !== confirm) throw new Error("Les mots de passe ne correspondent pas");
-      const user = await authService.registerPatient(email, pass, tel);
+      const user = await authService.registerPatient(email, pass, tel, medecinId);
       return { success: true, user };
     } catch (error: any) {
       return { success: false, message: error.message };

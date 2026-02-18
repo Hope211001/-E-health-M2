@@ -27,7 +27,7 @@ export const authService = {
   },
 
   // INSCRIPTION PATIENT
-  async registerPatient(email: string, pass: string, tel: string) {
+  async registerPatient(email: string, pass: string, tel: string, medecinId:string) {
     const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
     const uid = userCredential.user.uid;
     const batch = writeBatch(db);
@@ -45,7 +45,7 @@ export const authService = {
       numeroPatient: `PAT-${Date.now().toString().slice(-4)}`,
       allergies: [],
       antecedents: [],
-      medecinTraitantId: '',
+      medecinTraitantId: medecinId,
       codeGenereDate: serverTimestamp() as any,
       codeExpirationDate: serverTimestamp() as any,
     } as Patient;

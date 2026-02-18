@@ -7,6 +7,7 @@ export const APP_ROUTES = {
     HOME: "/(medecin)",
     PATIENT: {
       LISTE:"/(medecin)/patient/list-patient",
+      ADD:"/(medecin)/patient/add-patient",
     },
     ORDONNANCE:{
       ADD:"/(medecin)/ordonnance/add-ordonnance",

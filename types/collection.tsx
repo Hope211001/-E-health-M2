@@ -4,6 +4,8 @@ export interface User {
     uid: string;
     email: string;
     password: string;
+    nom?:string;
+    prenom?:string;
     role: UserRole;
     telephone: string;
     dateCreation: Timestamp;

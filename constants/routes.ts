@@ -11,7 +11,10 @@ export const APP_ROUTES = {
     },
     ORDONNANCE:{
       ADD:"/(medecin)/ordonnance/add-ordonnance",
+      ADD_BY_PATIENT:"/(medecin)/ordonnance/add-ordonnance-by-patient",
       LISTE: "/(medecin)/ordonnance/list-ordonnance",
+      LISTE_BY_PATIENT:"/(medecin)/ordonnance/list-ordonnance-by-patient",
+      DETAIL:"/(medecin)/ordonnance/detail-ordonnance",
     },
     PROFIL: "/(medecin)/profil",
   },

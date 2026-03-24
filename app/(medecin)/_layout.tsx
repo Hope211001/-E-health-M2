@@ -1,64 +1,25 @@
 import { Tabs } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { Platform } from 'react-native';
 
-export default function MedecinLayout() {
+export default function Layout() {
   return (
-    <Tabs screenOptions={{ 
-      tabBarActiveTintColor: '#7C3AED', 
-      tabBarInactiveTintColor: '#94A3B8',
-      headerShown: true,
-      headerShadowVisible: false, // Enlève la ligne de séparation moche
-      headerStyle: {
-        backgroundColor: '#F5F3FF', // Même couleur que le fond de ton écran
-      },
-      headerTitleStyle: {
-        fontWeight: 'bold',
-        color: '#1E293B',
-      },
-      tabBarStyle: {
-        height: Platform.OS === 'ios' ? 85 : 65,
-        paddingBottom: Platform.OS === 'ios' ? 30 : 10,
-        backgroundColor: '#FFFFFF',
-        borderTopWidth: 1,
-        borderTopColor: '#E2E8F0',
-      }
-    }}>
+    <Tabs>
+      <Tabs.Screen name="index" options={{ title: "Accueil" }} />
+      
+      {/* CORRECTION : On pointe vers les fichiers REELS vus dans tes logs */}
       <Tabs.Screen 
-        name="index" 
-        options={{ 
-          title: 'Tableau de bord',
-          headerTitle: 'Mon Espace', // Titre en haut
-          headerLeft: () => null,    // <--- SUPPRIME LA FLÈCHE DE RETOUR ICI
-          tabBarLabel: 'Accueil',
-          tabBarIcon: ({color, focused}) => (
-            <Ionicons name={focused ? "grid" : "grid-outline"} size={24} color={color} />
-          )
-        }} 
+        name="patient/list" 
+        options={{ title: "Mes Patients", href: "/patient/list" }} 
       />
       
       <Tabs.Screen 
-        name="patient/list-patient" 
-        options={{ 
-          title: 'Mes Patients', 
-          tabBarIcon: ({color, focused}) => (
-            <Ionicons name={focused ? "people" : "people-outline"} size={24} color={color} />
-          ) 
-        }} 
+        name="ordonnance/history" 
+        options={{ title: "Ordonnances", href: "/ordonnance/history" }} 
       />
 
       <Tabs.Screen 
-        name="profil" 
-        options={{ 
-          title: 'Profil', 
-          tabBarIcon: ({color, focused}) => (
-            <Ionicons name={focused ? "person" : "person-outline"} size={24} color={color} />
-          ) 
-        }} 
+        name="parametre/profil" 
+        options={{ title: "Mon Profil", href: "/parametre/profil" }} 
       />
-      
-      {/* On cache cet écran de la barre du bas */}
-      <Tabs.Screen name="ordonnance/add-ordonnance" options={{ href: null }} /> 
     </Tabs>
   );
 }

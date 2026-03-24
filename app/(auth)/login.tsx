@@ -1,143 +1,120 @@
 import React, { useState } from 'react';
-import {
-  StyleSheet, View, Text, TextInput, TouchableOpacity,
-  KeyboardAvoidingView, Platform, ActivityIndicator, Alert
-} from 'react-native';
-import { Href, useRouter } from 'expo-router'; // 1. Import du router
-import { authController } from '../../controller/authController';
-import { Colors } from '../../constants/theme';
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { useRouter } from 'expo-router';
+import Toast from 'react-native-toast-message';
+import { z } from 'zod';
 import { APP_ROUTES } from '@/constants/routes';
 
+// On importe directement le SERVICE et non le controller
+import { authService } from '../../api/authService';
+
+// Schéma de validation Zod
+const loginSchema = z.object({
+  email: z.string().email({ message: "Format email invalide" }),
+  password: z.string().min(6, { message: "Le mot de passe doit faire au moins 6 caractères" }),
+});
 
 export default function LoginScreen() {
-  const router = useRouter(); // 2. Initialisation du router
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
-    if (!email || !password) return Alert.alert("Erreur", "Remplissez tous les champs");
+    // 1. Validation locale avec Zod
+    const validation = loginSchema.safeParse({ email, password });
+    
+    if (!validation.success) {
+    const errorMessage = validation.error.issues[0]?.message || "Erreur de validation";
+    Toast.show({
+      type: 'error',
+      text1: 'Champs invalides',
+      text2: errorMessage
+    });
+    return;
+  }
 
     setLoading(true);
-    const result = await authController.handleLogin(email, password);
-    setLoading(false);
 
-    if (!result.success) {
-      Alert.alert("Échec de connexion", result.message);
-    } else {
-      // Redirection automatique après login gérée par ton AuthContext ou manuellement ici
-      router.replace(APP_ROUTES.MEDECIN.HOME as Href);
+    try {
+      // 2. Appel direct du SERVICE (Axios -> Express -> Firebase)
+      const user = await authService.login(email, password);
+
+      Toast.show({
+        type: 'success',
+        text1: 'Succès',
+        text2: `Bienvenue, ${user.role}`
+      });
+
+      // 3. Redirection basée sur le rôle reçu du Backend
+      if (user.role === 'medecin') {
+        router.replace(APP_ROUTES.MEDECIN.HOME);
+      } else if (user.role === 'patient') {
+        router.replace(APP_ROUTES.PATIENT.HOME );
+      } else if (user.role === 'superadmin') {
+        router.replace(APP_ROUTES.MEDECIN.HOME);
+      }
+
+    } catch (error: any) {
+      // Gestion des erreurs (Email incorrect, mot de passe faux, etc.)
+      Toast.show({
+        type: 'error',
+        text1: 'Erreur de connexion',
+        text2: error.response?.data?.error || "Identifiants incorrects"
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
-    >
-      <View style={styles.header}>
-        <Text style={styles.title}>PatientMed</Text>
-        <Text style={styles.subtitle}>Espace de santé sécurisé</Text>
+    <View className="flex-1 bg-slate-50 justify-center px-6">
+      <View className="items-center mb-10">
+        <Text className="text-4xl font-extrabold text-blue-600">PatientMed</Text>
+        <Text className="text-slate-500 mt-2">Connectez-vous à votre espace</Text>
       </View>
 
-      <View style={styles.form}>
-        <Text style={styles.label}>Adresse Email</Text>
+      <View className="bg-white p-8 rounded-3xl shadow-xl shadow-slate-200 border border-slate-100">
+        <Text className="text-slate-700 font-bold mb-2 ml-1">Email</Text>
         <TextInput
-          style={styles.input}
-          placeholder="ex: jean.dupont@email.com"
+          className="bg-slate-50 p-4 rounded-2xl mb-4 border border-slate-200 text-slate-900"
+          placeholder="email@exemple.com"
           value={email}
           onChangeText={setEmail}
           autoCapitalize="none"
           keyboardType="email-address"
         />
 
-        <Text style={styles.label}>Mot de passe</Text>
+        <Text className="text-slate-700 font-bold mb-2 ml-1">Mot de passe</Text>
         <TextInput
-          style={styles.input}
+          className="bg-slate-50 p-4 rounded-2xl mb-8 border border-slate-200 text-slate-900"
           placeholder="••••••••"
           value={password}
           onChangeText={setPassword}
           secureTextEntry
         />
 
-        <TouchableOpacity style={styles.forgotPass}>
-          <Text style={styles.forgotText}>Mot de passe oublié ?</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.button}
+        <TouchableOpacity 
+          className="bg-blue-600 p-4 rounded-2xl items-center shadow-lg shadow-blue-300"
           onPress={handleLogin}
           disabled={loading}
         >
           {loading ? (
-            <ActivityIndicator color="#FFF" />
+            <ActivityIndicator color="white" />
           ) : (
-            <Text style={styles.buttonText}>Se connecter</Text>
+            <Text className="text-white font-bold text-lg">Se connecter</Text>
           )}
         </TouchableOpacity>
       </View>
 
-      {/* 3. Footer modifié pour proposer les deux types d'inscription */}
-      {/* <View style={styles.footer}>
-        <Text style={styles.footerText}>Nouveau sur l'application ?</Text>
-        
-        <View style={styles.registerLinks}>
-          <TouchableOpacity onPress={() => router.push('/register-patient')}>
-            <Text style={styles.linkTextPatient}>Je suis un Patient</Text>
-          </TouchableOpacity>
-          
-          <View style={styles.separator} />
-          
-          <TouchableOpacity onPress={() => router.push('/register-medecin')}>
-            <Text style={styles.linkTextMedecin}>Je suis un Médecin</Text>
-          </TouchableOpacity>
-        </View>
-      </View> */}
-    </KeyboardAvoidingView>
+      <TouchableOpacity 
+        className="mt-8 items-center" 
+        onPress={() => router.push(APP_ROUTES.AUTH.REGISTER)}
+      >
+        <Text className="text-slate-500 text-base">
+          Pas de compte ? <Text className="text-blue-600 font-bold">Inscrivez-vous</Text>
+        </Text>
+      </TouchableOpacity>
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFC', padding: 20, justifyContent: 'center' },
-  header: { alignItems: 'center', marginBottom: 40 },
-  title: { fontSize: 32, fontWeight: 'bold', color: '#1E293B' },
-  subtitle: { fontSize: 16, color: '#64748B', marginTop: 5 },
-  form: {
-    backgroundColor: '#FFF',
-    padding: 20,
-    borderRadius: 20,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8
-  },
-  label: { fontSize: 14, fontWeight: '600', color: '#475569', marginBottom: 8, marginTop: 15 },
-  input: { backgroundColor: '#F1F5F9', padding: 15, borderRadius: 12, fontSize: 16, color: '#1E293B' },
-  forgotPass: { alignSelf: 'flex-end', marginTop: 10 },
-  forgotText: { color: '#3B82F6', fontWeight: '500' },
-  button: { backgroundColor: '#2563EB', padding: 18, borderRadius: 12, marginTop: 30, alignItems: 'center' },
-  buttonText: { color: '#FFF', fontSize: 18, fontWeight: 'bold' },
-
-  // Nouveaux styles pour le footer
-  footer: { marginTop: 30, alignItems: 'center' },
-  footerText: { color: '#64748B', marginBottom: 15, fontSize: 15 },
-  registerLinks: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FFF',
-    padding: 15,
-    borderRadius: 15,
-    width: '100%',
-    elevation: 2
-  },
-  linkTextPatient: { color: '#0EA5E9', fontWeight: 'bold', fontSize: 14 }, // Bleu Patient
-  linkTextMedecin: { color: '#7C3AED', fontWeight: 'bold', fontSize: 14 }, // Violet Médecin
-  separator: {
-    width: 1,
-    height: 20,
-    backgroundColor: '#E2E8F0',
-    marginHorizontal: 15
-  }
-});

@@ -1,26 +1,29 @@
 export const APP_ROUTES = {
   AUTH: {
     LOGIN: "/(auth)/login",
+    REGISTER:"/(auth)/register-medecin"
   },
   MEDECIN: {
     REGISTER: "/(medecin)/register-medecin",
     HOME: "/(medecin)",
     PATIENT: {
-      LISTE:"/(medecin)/patient/list-patient",
-      ADD:"/(medecin)/patient/add-patient",
+      LISTE: "/(medecin)/patient/list",
+      ADD: "/(medecin)/patient/add",
     },
-    ORDONNANCE:{
-      ADD:"/(medecin)/ordonnance/add-ordonnance",
-      ADD_BY_PATIENT:"/(medecin)/ordonnance/add-ordonnance-by-patient",
-      LISTE: "/(medecin)/ordonnance/list-ordonnance",
-      LISTE_BY_PATIENT:"/(medecin)/ordonnance/list-ordonnance-by-patient",
-      DETAIL:"/(medecin)/ordonnance/detail-ordonnance",
+    ORDONNANCE: {
+      ADD: "/(medecin)/ordonnance/add",
+      ADD_BY_PATIENT: "/(medecin)/ordonnance/add-by-patient",
+      HISTORY: "/(medecin)/ordonnance/history",
+      DETAIL: "/(medecin)/ordonnance/detail",
     },
-    PROFIL: "/(medecin)/profil",
+    PARAMETRE: {
+      PROFIL: "/(medecin)/parametre/profil",
+    },
+
   },
   PATIENT: {
     REGISTER: "/(patient)/register-patient",
-    HOME: "/(patient)", 
+    HOME: "/(patient)",
     MES_RAPPELS: "/(patient)/rappels",
   }
 } as const;

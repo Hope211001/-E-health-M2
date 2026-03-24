@@ -1,21 +1,23 @@
 import React, { useState } from 'react';
-import {
-  StyleSheet,
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  ScrollView,
-  Alert,
-  ActivityIndicator,
-  KeyboardAvoidingView, // <--- Important
-  Platform,             // <--- Important
-  TouchableWithoutFeedback,
-  Keyboard              // <--- Important
-} from 'react-native';
-import { Href, useRouter } from 'expo-router';
-import { authController } from '../../controller/authController';
-import { APP_ROUTES } from '../../constants/routes';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
+import { useRouter } from 'expo-router';
+import Toast from 'react-native-toast-message';
+import { z } from 'zod';
+import { authService } from '../../api/authService';
+import { APP_ROUTES } from '@/constants/routes';
+
+// Schéma de validation Zod spécifique au médecin
+const medecinSchema = z.object({
+  email: z.string().email({ message: "Email professionnel invalide" }),
+  spec: z.string().min(3, { message: "La spécialité est requise" }),
+  ordre: z.string().min(5, { message: "N° d'ordre national requis" }),
+  tel: z.string().min(8, { message: "Numéro de téléphone trop court" }),
+  pass: z.string().min(6, { message: "Mot de passe : 6 caractères minimum" }),
+  confirm: z.string()
+}).refine((data) => data.pass === data.confirm, {
+  message: "Les mots de passe ne correspondent pas",
+  path: ["confirm"],
+});
 
 export default function RegisterMedecin() {
   const router = useRouter();
@@ -23,114 +25,116 @@ export default function RegisterMedecin() {
   const [loading, setLoading] = useState(false);
 
   const handleRegister = async () => {
-    // Validation basique avant l'envoi
-    if (!form.email || !form.pass) {
-      Alert.alert("Erreur", "Veuillez remplir les champs obligatoires");
+    const validation = medecinSchema.safeParse(form);
+    if (!validation.success) {
+      Toast.show({
+        type: 'error',
+        text1: 'Validation',
+        text2: validation.error.issues[0].message
+      });
       return;
     }
 
     setLoading(true);
-    const res = await authController.handleMedecinRegistration(
-      form.email, form.pass, form.confirm, form.tel, form.spec, form.ordre
-    );
-    setLoading(false);
+    try {
+      // Transformation des spécialités en tableau (séparées par des virgules)
+      const specArray = form.spec.split(',').map(s => s.trim());
 
-    if (res.success) router.replace(APP_ROUTES.MEDECIN.HOME as Href);
-    else Alert.alert("Erreur", res.message);
+      await authService.registerMedecin(form.email, form.pass, form.tel, specArray, form.ordre);
+
+      Toast.show({ type: 'success', text1: 'Compte créé', text2: 'Bienvenue au réseau PatientMed' });
+      router.replace(APP_ROUTES.MEDECIN.HOME); // Redirection vers l'espace médecin
+
+    } catch (error: any) {
+      console.log("FULL ERROR OBJ:", error); // Regarde ton terminal VS Code (Front)
+
+      Toast.show({
+        type: 'error',
+        text1: 'Détail Erreur',
+        text2: error.response?.data?.error || error.message || "Erreur réseau"
+      });
+
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    // KeyboardAvoidingView entoure tout l'écran
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={{ flex: 1 }}
-    >
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <ScrollView
-          contentContainerStyle={styles.container}
-          keyboardShouldPersistTaps="handled" // Permet de cliquer sur le bouton même si le clavier est ouvert
-        >
-          <View style={styles.inner}>
-            <Text style={styles.title}>Espace Praticien</Text>
-            <Text style={styles.subtitle}>Rejoignez le réseau médical professionnel</Text>
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1 bg-violet-50">
+      <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 24, justifyContent: 'center' }}>
 
-            <View style={styles.card}>
-              <TextInput
-                style={styles.input}
-                placeholder="Email professionnel"
-                value={form.email}
-                onChangeText={(v) => setForm({ ...form, email: v })}
-                keyboardType="email-address"
-                autoCapitalize="none"
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Spécialité(s)"
-                value={form.spec}
-                onChangeText={(v) => setForm({ ...form, spec: v })}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="N° d'ordre national"
-                value={form.ordre}
-                onChangeText={(v) => setForm({ ...form, ordre: v })}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Téléphone"
-                value={form.tel}
-                onChangeText={(v) => setForm({ ...form, tel: v })}
-                keyboardType="phone-pad"
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Mot de passe"
-                secureTextEntry
-                value={form.pass}
-                onChangeText={(v) => setForm({ ...form, pass: v })}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Confirmer mot de passe"
-                secureTextEntry
-                value={form.confirm}
-                onChangeText={(v) => setForm({ ...form, confirm: v })}
-              />
+        <View className="items-center mb-8">
+          <Text className="text-3xl font-black text-violet-800">Espace Praticien</Text>
+          <Text className="text-slate-500 mt-2 text-center">Créez votre profil professionnel sécurisé</Text>
+        </View>
 
-              <TouchableOpacity
-                style={styles.btnMed}
-                onPress={handleRegister}
-                disabled={loading}
-              >
-                {loading ? (
-                  <ActivityIndicator color="#FFF" />
-                ) : (
-                  <Text style={styles.btnText}>S'inscrire comme Médecin</Text>
-                )}
-              </TouchableOpacity>
-            </View>
+        <View className="bg-white p-6 rounded-[32px] shadow-xl shadow-violet-100 border border-white">
+          <TextInput
+            className="bg-slate-50 p-4 rounded-2xl mb-4 border border-slate-100"
+            placeholder="Email professionnel"
+            value={form.email}
+            onChangeText={(v) => setForm({ ...form, email: v })}
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
+
+          <View className="flex-row gap-3 mb-4">
+            <TextInput
+              className="flex-1 bg-slate-50 p-4 rounded-2xl border border-slate-100"
+              placeholder="Spécialité"
+              value={form.spec}
+              onChangeText={(v) => setForm({ ...form, spec: v })}
+            />
+            <TextInput
+              className="flex-1 bg-slate-50 p-4 rounded-2xl border border-slate-100"
+              placeholder="N° Ordre"
+              value={form.ordre}
+              onChangeText={(v) => setForm({ ...form, ordre: v })}
+            />
           </View>
-        </ScrollView>
-      </TouchableWithoutFeedback>
+
+          <TextInput
+            className="bg-slate-50 p-4 rounded-2xl mb-4 border border-slate-100"
+            placeholder="Téléphone"
+            value={form.tel}
+            onChangeText={(v) => setForm({ ...form, tel: v })}
+            keyboardType="phone-pad"
+          />
+
+          <TextInput
+            className="bg-slate-50 p-4 rounded-2xl mb-4 border border-slate-100"
+            placeholder="Mot de passe"
+            secureTextEntry
+            value={form.pass}
+            onChangeText={(v) => setForm({ ...form, pass: v })}
+          />
+
+          <TextInput
+            className="bg-slate-50 p-4 rounded-2xl mb-6 border border-slate-100"
+            placeholder="Confirmer mot de passe"
+            secureTextEntry
+            value={form.confirm}
+            onChangeText={(v) => setForm({ ...form, confirm: v })}
+          />
+
+          <TouchableOpacity
+            className="bg-violet-600 p-5 rounded-2xl items-center shadow-lg shadow-violet-200"
+            onPress={handleRegister}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="white" />
+            ) : (
+              <Text className="text-white font-bold text-lg">S'inscrire</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+
+        <TouchableOpacity className="mt-8 items-center" onPress={() => router.back()}>
+          <Text className="text-slate-400">Déjà membre ? <Text className="text-violet-600 font-bold">Se connecter</Text></Text>
+        </TouchableOpacity>
+
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-    backgroundColor: '#F5F3FF',
-    paddingBottom: 40 // Un peu d'espace en bas pour le défilement
-  },
-  inner: {
-    padding: 25,
-    flex: 1,
-    justifyContent: 'center',
-  },
-  title: { fontSize: 26, fontWeight: 'bold', color: '#5B21B6', textAlign: 'center' },
-  subtitle: { textAlign: 'center', color: '#64748B', marginBottom: 30 },
-  card: { backgroundColor: '#FFF', padding: 20, borderRadius: 20, elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4 },
-  input: { backgroundColor: '#F8FAFC', padding: 15, borderRadius: 12, marginBottom: 15, borderWidth: 1, borderColor: '#E2E8F0' },
-  btnMed: { backgroundColor: '#7C3AED', padding: 18, borderRadius: 12, alignItems: 'center', marginTop: 10 },
-  btnText: { color: '#FFF', fontWeight: 'bold', fontSize: 16 }
-});

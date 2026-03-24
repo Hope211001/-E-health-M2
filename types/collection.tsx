@@ -46,6 +46,7 @@ export interface Medicament {
     duree: number;
     heuresPrises: string[];
 }
+
 export interface Prescription {
     id?: string;
     patientId: string;

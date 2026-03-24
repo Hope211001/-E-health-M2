@@ -1,92 +1,61 @@
-import { auth, db } from './firebase';
-// Vérifie bien que TOUTES ces fonctions sont présentes ici :
-import { 
-  createUserWithEmailAndPassword, 
-  signInWithEmailAndPassword, 
-  signOut 
-} from 'firebase/auth'; 
+import { ClientService } from './clientService';
+import { auth } from './firebase';
+import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import { User, Medecin } from '../types/collection';
 
-import { 
-  doc, 
-  writeBatch, 
-  serverTimestamp, 
-  getDoc 
-} from 'firebase/firestore'; 
+class AuthService extends ClientService {
 
-import { User, Patient, Medecin } from '../types/collection';
-export const authService = {
-  // CONNEXION
-  async login(email: string, pass: string) {
-    // Cette ligne utilise la fonction importée plus haut
+  async login(email: string, pass: string): Promise<User> {
+    // ÉTAPE 1 : Connexion côté Client (Firebase Auth)
+    // Cela permet de valider le mot de passe et de générer un Token
     const userCredential = await signInWithEmailAndPassword(auth, email, pass);
-    const uid = userCredential.user.uid;
-    
-    // On récupère le profil dans la collection "users" pour avoir le rôle
-    const userDoc = await getDoc(doc(db, "users", uid));
-    return userDoc.data() as User;
-  },
 
-  // INSCRIPTION PATIENT
-  async registerPatient(email: string, pass: string, tel: string, medecinId:string) {
-    const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
-    const uid = userCredential.user.uid;
-    const batch = writeBatch(db);
+    if (!userCredential.user) {
+      throw new Error("Erreur de connexion Firebase");
+    }
 
-    const userBase: User = {
-      uid, email, role: 'patient', telephone: tel,
-      statut: 'actif',
-      dateCreation: serverTimestamp() as any,
-      password: '', 
-    };
+    // ÉTAPE 2 : Appel à ton Backend Express
+    // L'intercepteur va maintenant détecter l'utilisateur connecté et ajouter le Token
+    // On n'envoie plus le password au backend, le Token suffit !
+    const response = await this.api.post<User>('/auth/login');
 
-    const patientDetail: Patient = {
-      ...userBase,
-      userId: uid,
-      numeroPatient: `PAT-${Date.now().toString().slice(-4)}`,
-      allergies: [],
-      antecedents: [],
-      medecinTraitantId: medecinId,
-      codeGenereDate: serverTimestamp() as any,
-      codeExpirationDate: serverTimestamp() as any,
-    } as Patient;
-
-    batch.set(doc(db, "users", uid), userBase);
-    batch.set(doc(db, "patients", uid), patientDetail);
-
-    await batch.commit();
-    return patientDetail;
-  },
-
-  // INSCRIPTION MEDECIN
-  async registerMedecin(email: string, pass: string, tel: string, spec: string[], ordre: string) {
-    const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
-    const uid = userCredential.user.uid;
-    const batch = writeBatch(db);
-
-    const userBase: User = {
-      uid, email, role: 'medecin', telephone: tel,
-      statut: 'actif',
-      dateCreation: serverTimestamp() as any,
-      password: '',
-    };
-
-    const medecinDetail: Medecin = {
-      ...userBase,
-      id: uid,
-      userId: uid,
-      specialite: spec,
-      numeroOrdre: ordre,
-    } as Medecin;
-
-    batch.set(doc(db, "users", uid), userBase);
-    batch.set(doc(db, "medecins", uid), medecinDetail);
-
-    await batch.commit();
-    return medecinDetail;
-  },
-
-  // DÉCONNEXION
-  async logout() {
-    await signOut(auth);
+    return response.data;
   }
-};
+
+  async registerPatient(email: string, pass: string, tel: string) {
+    // Ici, l'intercepteur utilisera le token du MEDECIN connecté
+    const response = await this.api.post('/auth/register-patient', {
+      email,
+      password: pass,
+      tel
+    });
+    return response.data;
+  }
+
+  async registerMedecin(email: string, pass: string, tel: string, spec: string[], ordre: string): Promise<Medecin> {
+    // Inscription libre (pas besoin de token pour cette route en général)
+    const response = await this.api.post<Medecin>('/auth/register-medecin', {
+      email,
+      password: pass,
+      tel,
+      spec,
+      ordre
+    });
+    return response.data;
+  }
+
+  async logout() {
+    try {
+      // 1. Prévenir le backend (pour révoquer le token)
+      await this.api.post('/auth/logout');
+    } catch (error) {
+      console.warn("Le serveur n'a pas pu révoquer le token, déconnexion locale forcée.");
+    } finally {
+      // 2. Déconnexion locale de Firebase (supprime le token du storage de l'app)
+      await signOut(auth);
+      console.log("✅ Déconnecté localement");
+    }
+  }
+}
+
+export const authService = new AuthService();

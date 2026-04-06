@@ -6,6 +6,7 @@ import { useRouter, useFocusEffect, Href } from 'expo-router'; // Importation de
 import Toast from 'react-native-toast-message';
 
 import { patientService } from '../../../api/patientService';
+import { conversationService } from '../../../api/conversationService';
 import { Patient } from '../../../types/collection';
 import { APP_ROUTES } from '@/constants/routes';
 
@@ -99,6 +100,20 @@ export default function ListePatients() {
           <Text className="text-white font-bold ml-2">Prescrire</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Bouton Message */}
+      <TouchableOpacity
+        className="bg-purple-50 h-12 rounded-2xl flex-row items-center justify-center mt-3 border border-purple-100"
+        onPress={async () => {
+          try {
+            const conv = await conversationService.getOrCreate({ patientId: item.userId || item.id });
+            router.push({ pathname: '/(conversation)/chat', params: { conversationId: conv.id, contactName: item.email } } as any);
+          } catch (e) { console.error(e); }
+        }}
+      >
+        <Ionicons name="chatbubble-outline" size={18} color="#7C3AED" />
+        <Text className="text-purple-700 font-bold ml-2">Message</Text>
+      </TouchableOpacity>
     </View>
   );
 

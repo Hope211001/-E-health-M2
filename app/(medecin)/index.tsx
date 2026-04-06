@@ -1,18 +1,27 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, StatusBar, ImageBackground } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { auth, db } from '../../api/firebase';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
-import { useRouter, Href } from 'expo-router';
+import { useRouter, Href, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { APP_ROUTES } from '../../constants/routes';
 import LogoutButton from '../../components/bouton/logoutBouton';
+import { notificationService } from '../../api/notificationService';
 
 export default function MedecinDashboard() {
   const [doctorData, setDoctorData] = useState<any>(null);
   const [stats, setStats] = useState({ patients: 0, ordonnances: 0 });
   const [loading, setLoading] = useState(true);
+  const [unreadCount, setUnreadCount] = useState(0);
   const router = useRouter();
+
+  const fetchUnreadCount = useCallback(async () => {
+    try {
+      const count = await notificationService.getUnreadCount();
+      setUnreadCount(count);
+    } catch (e) { console.error(e); }
+  }, []);
 
   useEffect(() => {
     const fetchDashboard = async () => {
@@ -28,7 +37,11 @@ export default function MedecinDashboard() {
       finally { setLoading(false); }
     };
     fetchDashboard();
+    fetchUnreadCount();
   }, []);
+
+  // Rafraîchir le compteur à chaque retour sur l'écran
+  useFocusEffect(useCallback(() => { fetchUnreadCount(); }, [fetchUnreadCount]));
 
   if (loading) return (
     <View className="flex-1 justify-center items-center bg-white">
@@ -51,12 +64,27 @@ export default function MedecinDashboard() {
               <Text className="text-3xl font-black text-white mt-1">Bonjour,</Text>
               <Text className="text-white text-2xl font-light opacity-90">Dr. {doctorData?.nom || "Spécialiste"}</Text>
             </View>
-            <TouchableOpacity 
-              onPress={() => router.push(APP_ROUTES.MEDECIN.PARAMETRE.PROFIL as Href)}
-              className="w-14 h-14 rounded-2xl bg-white/20 border border-white/30 items-center justify-center"
-            >
-              <Ionicons name="person-outline" size={26} color="white" />
-            </TouchableOpacity>
+            <View className="flex-row items-center gap-3">
+              {/* Cloche de notifications */}
+              <TouchableOpacity
+                onPress={() => router.push('/(notification)/list' as Href)}
+                className="w-14 h-14 rounded-2xl bg-white/20 border border-white/30 items-center justify-center"
+              >
+                <Ionicons name="notifications-outline" size={24} color="white" />
+                {unreadCount > 0 && (
+                  <View className="absolute -top-1 -right-1 bg-red-500 min-w-[20px] h-5 rounded-full items-center justify-center px-1">
+                    <Text className="text-white text-[10px] font-black">{unreadCount > 99 ? '99+' : unreadCount}</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => router.push(APP_ROUTES.MEDECIN.PARAMETRE.PROFIL as Href)}
+                className="w-14 h-14 rounded-2xl bg-white/20 border border-white/30 items-center justify-center"
+              >
+                <Ionicons name="person-outline" size={26} color="white" />
+              </TouchableOpacity>
+            </View>
           </View>
 
           {/* Badge Spécialité */}
@@ -111,22 +139,37 @@ export default function MedecinDashboard() {
                 
                 {/* Grille de petits boutons */}
                 <View className="w-[48%] gap-4">
-                    <SmallAction 
-                        title="Prescrire" 
-                        icon="medical" 
-                        color="#10B981" 
-                        bg="bg-emerald-50" 
-                        onPress={() => router.push(APP_ROUTES.MEDECIN.ORDONNANCE.ADD as Href)} 
+                    <SmallAction
+                        title="Prescrire"
+                        icon="medical"
+                        color="#10B981"
+                        bg="bg-emerald-50"
+                        onPress={() => router.push(APP_ROUTES.MEDECIN.ORDONNANCE.ADD as Href)}
                     />
-                    <SmallAction 
-                        title="Paramètres" 
-                        icon="settings-sharp" 
-                        color="#64748B" 
-                        bg="bg-slate-100" 
-                        onPress={() => router.push(APP_ROUTES.MEDECIN.PARAMETRE.PROFIL as Href)} 
+                    <SmallAction
+                        title="Messages"
+                        icon="chatbubbles"
+                        color="#7C3AED"
+                        bg="bg-purple-50"
+                        onPress={() => router.push('/(conversation)/list' as Href)}
                     />
                 </View>
             </View>
+
+            {/* Bouton Messages */}
+            <TouchableOpacity
+                onPress={() => router.push('/(conversation)/list' as Href)}
+                className="bg-purple-50 p-5 rounded-[30px] flex-row items-center mt-4 border border-purple-100"
+            >
+                <View className="bg-purple-600 p-3 rounded-xl mr-4">
+                    <Ionicons name="chatbubbles" size={22} color="white" />
+                </View>
+                <View className="flex-1">
+                    <Text className="text-slate-900 font-black text-base">Messages</Text>
+                    <Text className="text-slate-400 text-[10px] font-bold uppercase mt-0.5">Discuter avec vos patients</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color="#A78BFA" />
+            </TouchableOpacity>
         </View>
 
         {/* --- LOGOUT SECTION --- */}

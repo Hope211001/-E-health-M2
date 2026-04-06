@@ -17,6 +17,21 @@ class PrescriptionService extends ClientService {
         const response = await this.api.get<Prescription>(`/prescription/${id}`);
         return response.data;
     }
+
+    async startPrescription(id: string): Promise<any> {
+        const response = await this.api.put(`/prescription/${id}/start`);
+        return response.data;
+    }
+
+    async getAlertesToday(): Promise<any[]> {
+        const response = await this.api.get('/prescription/alertes/today');
+        return response.data;
+    }
+
+    async markAlertePrise(alerteId: string): Promise<any> {
+        const response = await this.api.put(`/prescription/alertes/${alerteId}/pris`);
+        return response.data;
+    }
 }
 
 export const prescriptionService = new PrescriptionService();

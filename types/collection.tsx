@@ -55,7 +55,7 @@ export interface Prescription {
     dateDebut: Timestamp;
     dateFin: Timestamp;
     duree: number;
-    statut: 'active' | 'terminee' | 'annulee' | 'en_attente';
+    statut: 'active' | 'en_cours' | 'terminee' | 'annulee' | 'en_attente';
     diagnostic: string;
     observations: string;
     medicaments: Medicament[];

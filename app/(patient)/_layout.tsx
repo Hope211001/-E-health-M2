@@ -3,15 +3,40 @@ import { Ionicons } from '@expo/vector-icons';
 
 export default function PatientLayout() {
   return (
-    <Tabs screenOptions={{ 
-      tabBarActiveTintColor: '#3498db',
-      headerShown: true, // On garde celui-là pour avoir "Accueil" écrit proprement
+    <Tabs screenOptions={{
+      tabBarActiveTintColor: '#4F46E5',
+      headerShown: false,
     }}>
-      <Tabs.Screen name="index" options={{ title: 'Accueil', tabBarIcon: ({color}) => <Ionicons name="home" size={24} color={color} /> }} />
-      <Tabs.Screen name="rappels" options={{ title: 'Rappel', tabBarIcon: ({color}) => <Ionicons name="person" size={24} color={color} /> }} />
-      
-      {/* CETTE LIGNE CACHE L'ONGLET AJOUT_ORDONNANCE DU MENU DU BAS */}
-      <Tabs.Screen name="ajout_ordonnance" options={{ href: null }} /> 
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: 'Accueil',
+          tabBarIcon: ({ color }) => <Ionicons name="home" size={24} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="ordonnance"
+        options={{
+          title: 'Ordonnances',
+          tabBarIcon: ({ color }) => <Ionicons name="document-text" size={24} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="rappels"
+        options={{
+          title: 'Rappels',
+          tabBarIcon: ({ color }) => <Ionicons name="alarm" size={24} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="parametres"
+        options={{
+          title: 'Paramètres',
+          tabBarIcon: ({ color }) => <Ionicons name="settings" size={24} color={color} />,
+        }}
+      />
+      {/* Écran caché du tab bar */}
+      <Tabs.Screen name="detail-prescription" options={{ href: null }} />
     </Tabs>
   );
 }

@@ -18,8 +18,13 @@ class PrescriptionService extends ClientService {
         return response.data;
     }
 
-    async startPrescription(id: string): Promise<any> {
-        const response = await this.api.put(`/prescription/${id}/start`);
+    async startPrescription(id: string, horairesRappel?: { matin: string; midi: string; soir: string }): Promise<any> {
+        const response = await this.api.put(`/prescription/${id}/start`, horairesRappel ? { horairesRappel } : {});
+        return response.data;
+    }
+
+    async updatePrescriptionHoraires(id: string, horairesRappel: { matin: string; midi: string; soir: string }): Promise<any> {
+        const response = await this.api.put(`/prescription/${id}/horaires`, { horairesRappel });
         return response.data;
     }
 

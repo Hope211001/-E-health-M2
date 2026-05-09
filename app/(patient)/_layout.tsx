@@ -1,7 +1,15 @@
+import { useEffect } from 'react';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { requestNotificationPermission } from '../../api/notificationLocal';
 
 export default function PatientLayout() {
+  useEffect(() => {
+    requestNotificationPermission().catch((e) =>
+      console.warn('Permission notifications refusée ou erreur:', e)
+    );
+  }, []);
+
   return (
     <Tabs screenOptions={{
       tabBarActiveTintColor: '#4F46E5',

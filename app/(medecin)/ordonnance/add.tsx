@@ -34,8 +34,11 @@ export default function AjoutOrdonnance() {
   // Formulaire
   const [diagnostic, setDiagnostic] = useState('');
   const [medicaments, setMedicaments] = useState<any[]>([
-    { nomMedicament: '', dosage: '', frequence: '', duree: '' }
+    { nomMedicament: '', dosage: '', matin: '0', midi: '0', soir: '0', duree: '' }
   ]);
+
+  const buildFrequence = (m: any) =>
+    `Matin: ${parseInt(m.matin) || 0}, Midi: ${parseInt(m.midi) || 0}, Soir: ${parseInt(m.soir) || 0}`;
 
   // LOGIQUE DE RECHERCHE (Debounce)
   useEffect(() => {
@@ -54,7 +57,7 @@ export default function AjoutOrdonnance() {
     return () => clearTimeout(timer);
   }, [searchQuery, selectedPatient]);
 
-  const addMed = () => setMedicaments([...medicaments, { nomMedicament: '', dosage: '', frequence: '', duree: '' }]);
+  const addMed = () => setMedicaments([...medicaments, { nomMedicament: '', dosage: '', matin: '0', midi: '0', soir: '0', duree: '' }]);
   
   const removeMed = (index: number) => {
     if (medicaments.length > 1) setMedicaments(medicaments.filter((_, i) => i !== index));
@@ -69,7 +72,20 @@ export default function AjoutOrdonnance() {
   const handleSave = async () => {
     if (!selectedPatient) return Toast.show({ type: 'error', text1: 'Patient requis' });
 
-    const validation = prescriptionSchema.safeParse({ diagnostic, medicaments });
+    const medicamentsAvecFrequence = medicaments.map((m) => ({
+      nomMedicament: m.nomMedicament,
+      dosage: m.dosage,
+      frequence: buildFrequence(m),
+      duree: m.duree,
+    }));
+
+    const totalParJour = (m: any) => (parseInt(m.matin) || 0) + (parseInt(m.midi) || 0) + (parseInt(m.soir) || 0);
+    const medSansPrise = medicaments.find((m) => totalParJour(m) === 0);
+    if (medSansPrise) {
+      return Toast.show({ type: 'error', text1: 'Posologie requise', text2: 'Renseignez au moins une prise (matin, midi ou soir)' });
+    }
+
+    const validation = prescriptionSchema.safeParse({ diagnostic, medicaments: medicamentsAvecFrequence });
     if (!validation.success) {
       return Toast.show({ type: 'error', text1: 'Erreur', text2: validation.error.issues[0].message });
     }
@@ -79,7 +95,7 @@ export default function AjoutOrdonnance() {
       await prescriptionService.createPrescription({
         patientId: selectedPatient.userId,
         diagnostic,
-        medicaments,
+        medicaments: medicamentsAvecFrequence,
         duree: medicaments[0].duree // Durée globale basée sur le 1er médoc
       });
       Toast.show({ type: 'success', text1: 'Ordonnance créée !' });
@@ -182,24 +198,54 @@ export default function AjoutOrdonnance() {
                 onChangeText={(v) => updateMed(index, 'nomMedicament', v)}
               />
               
+              <TextInput
+                className="bg-slate-50 p-4 rounded-xl mb-3"
+                placeholder="Dosage (ex: 500mg)"
+                value={med.dosage}
+                onChangeText={(v) => updateMed(index, 'dosage', v)}
+              />
+
+              {/* POSOLOGIE — nb de comprimés par moment */}
+              <Text className="text-slate-700 font-bold text-xs mb-2 ml-1">POSOLOGIE (nombre de comprimés)</Text>
               <View className="flex-row gap-2 mb-3">
-                <TextInput 
-                  className="flex-1 bg-slate-50 p-4 rounded-xl"
-                  placeholder="Dosage" 
-                  value={med.dosage}
-                  onChangeText={(v) => updateMed(index, 'dosage', v)}
-                />
-                <TextInput 
-                  className="flex-1 bg-slate-50 p-4 rounded-xl"
-                  placeholder="Fréquence" 
-                  value={med.frequence}
-                  onChangeText={(v) => updateMed(index, 'frequence', v)}
-                />
+                <View className="flex-1 bg-amber-50 rounded-xl p-3 items-center border border-amber-200">
+                  <Ionicons name="sunny" size={20} color="#F59E0B" />
+                  <Text className="text-amber-700 text-[10px] font-bold uppercase mt-1 mb-2">Matin</Text>
+                  <TextInput
+                    className="bg-white px-3 py-2 rounded-lg text-center text-xl font-black text-slate-900 w-16 border border-amber-200"
+                    keyboardType="numeric"
+                    maxLength={2}
+                    value={med.matin}
+                    onChangeText={(v) => updateMed(index, 'matin', v.replace(/[^0-9]/g, ''))}
+                  />
+                </View>
+                <View className="flex-1 bg-orange-50 rounded-xl p-3 items-center border border-orange-200">
+                  <Ionicons name="partly-sunny" size={20} color="#F97316" />
+                  <Text className="text-orange-700 text-[10px] font-bold uppercase mt-1 mb-2">Midi</Text>
+                  <TextInput
+                    className="bg-white px-3 py-2 rounded-lg text-center text-xl font-black text-slate-900 w-16 border border-orange-200"
+                    keyboardType="numeric"
+                    maxLength={2}
+                    value={med.midi}
+                    onChangeText={(v) => updateMed(index, 'midi', v.replace(/[^0-9]/g, ''))}
+                  />
+                </View>
+                <View className="flex-1 bg-indigo-50 rounded-xl p-3 items-center border border-indigo-200">
+                  <Ionicons name="moon" size={20} color="#6366F1" />
+                  <Text className="text-indigo-700 text-[10px] font-bold uppercase mt-1 mb-2">Soir</Text>
+                  <TextInput
+                    className="bg-white px-3 py-2 rounded-lg text-center text-xl font-black text-slate-900 w-16 border border-indigo-200"
+                    keyboardType="numeric"
+                    maxLength={2}
+                    value={med.soir}
+                    onChangeText={(v) => updateMed(index, 'soir', v.replace(/[^0-9]/g, ''))}
+                  />
+                </View>
               </View>
 
-              <TextInput 
+              <TextInput
                 className="bg-slate-50 p-4 rounded-xl"
-                placeholder="Durée (en jours)" 
+                placeholder="Durée (en jours)"
                 keyboardType="numeric"
                 value={med.duree}
                 onChangeText={(v) => updateMed(index, 'duree', v)}

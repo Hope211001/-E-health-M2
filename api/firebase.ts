@@ -1,11 +1,8 @@
 import { initializeApp, getApp, getApps } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
-import { 
-  initializeAuth, 
-  //@ts-ignore
-  getReactNativePersistence, 
-  Auth
-} from 'firebase/auth';
+import { initializeAuth, getAuth, Auth } from 'firebase/auth';
+// @ts-ignore — chemin interne pour Firebase v12+ avec React Native
+import { getReactNativePersistence } from '@firebase/auth/dist/rn/index.js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const firebaseConfig = {
@@ -17,24 +14,17 @@ const firebaseConfig = {
   appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
 };
 
-// 1. Initialisation de l'App
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 
-/**
- * 2. INITIALISATION DE L'AUTH (LA SEULE ET UNIQUE)
- * On utilise une fonction auto-exécutée pour garantir le typage et l'ordre
- */
-const auth: Auth = (() => {
-  // On vérifie si l'auth est déjà initialisée sur l'app
-  // On accède à la propriété interne pour éviter d'appeler getAuth() trop tôt
-  const existingAuth = (app as any).auth;
-  if (existingAuth) return existingAuth;
-
-  // C'est ici qu'on force la persistance
-  return initializeAuth(app, {
+let auth: Auth;
+try {
+  auth = initializeAuth(app, {
     persistence: getReactNativePersistence(AsyncStorage),
   });
-})();
+} catch {
+  // Si déjà initialisée (rechargement à chaud), on récupère l'instance existante
+  auth = getAuth(app);
+}
 
 const db = getFirestore(app);
 

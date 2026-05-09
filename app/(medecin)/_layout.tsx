@@ -44,7 +44,6 @@ export default function Layout() {
       <Tabs.Screen name="ordonnance/add" options={{ href: null }} />
       <Tabs.Screen name="ordonnance/add-by-patient" options={{ href: null }} />
       <Tabs.Screen name="ordonnance/detail" options={{ href: null }} />
-      <Tabs.Screen name="ordonnance/list" options={{ href: null }} />
     </Tabs>
   );
 }

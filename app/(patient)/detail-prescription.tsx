@@ -4,8 +4,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { auth, db } from '../../api/firebase';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 import { prescriptionService } from '../../api/prescriptionService';
+import {
+  requestNotificationPermission,
+  schedulePrescriptionNotifications,
+} from '../../api/notificationLocal';
 import Toast from 'react-native-toast-message';
 
 const DEFAUT_HORAIRES = { matin: '08:00', midi: '12:00', soir: '20:00' };
@@ -31,14 +35,21 @@ export default function DetailPrescription() {
 
         // Charger la prescription
         const prescSnap = await getDoc(doc(db, 'prescriptions', id as string));
-        if (prescSnap.exists()) {
-          setPrescription({ id: prescSnap.id, ...prescSnap.data() });
+        if (!prescSnap.exists()) {
+          setLoading(false);
+          return;
         }
+        const prescData: any = { id: prescSnap.id, ...prescSnap.data() };
+        setPrescription(prescData);
 
-        // Charger les horaires du patient
-        const patientSnap = await getDoc(doc(db, 'patients', user.uid));
-        if (patientSnap.exists() && patientSnap.data().horairesRappel) {
-          setHoraires({ ...DEFAUT_HORAIRES, ...patientSnap.data().horairesRappel });
+        // Priorité : horaires propres à la prescription > horaires du patient (par défaut) > valeurs par défaut
+        if (prescData.horairesRappel) {
+          setHoraires({ ...DEFAUT_HORAIRES, ...prescData.horairesRappel });
+        } else {
+          const patientSnap = await getDoc(doc(db, 'patients', user.uid));
+          if (patientSnap.exists() && patientSnap.data().horairesRappel) {
+            setHoraires({ ...DEFAUT_HORAIRES, ...patientSnap.data().horairesRappel });
+          }
         }
       } catch (e) {
         console.error(e);
@@ -66,10 +77,10 @@ export default function DetailPrescription() {
     }
     setSavingHoraires(true);
     try {
-      const user = auth.currentUser;
-      if (!user) return;
-      await updateDoc(doc(db, 'patients', user.uid), { horairesRappel: horaires });
-      Toast.show({ type: 'success', text1: 'Horaires sauvegardés' });
+      // Sauvegarde des horaires propres à CETTE prescription (pas au profil patient)
+      await prescriptionService.updatePrescriptionHoraires(prescription.id, horaires);
+      setPrescription((p: any) => ({ ...p, horairesRappel: horaires }));
+      Toast.show({ type: 'success', text1: 'Horaires sauvegardés pour cette ordonnance' });
     } catch (e) {
       Toast.show({ type: 'error', text1: 'Erreur', text2: 'Impossible de sauvegarder' });
     } finally {
@@ -90,13 +101,31 @@ export default function DetailPrescription() {
       const user = auth.currentUser;
       if (!user) return;
 
-      // Sauvegarder les horaires avant de démarrer
-      await updateDoc(doc(db, 'patients', user.uid), { horairesRappel: horaires });
+      // Démarrer la prescription en envoyant les horaires propres à cette ordonnance
+      await prescriptionService.startPrescription(prescription.id, horaires);
 
-      // Démarrer la prescription
-      await prescriptionService.startPrescription(prescription.id);
+      // Planifier les notifications locales sur le téléphone
+      const granted = await requestNotificationPermission();
+      if (granted) {
+        const { count } = await schedulePrescriptionNotifications({
+          prescriptionId: prescription.id,
+          medicaments: prescription.medicaments || [],
+          horaires,
+          dureeDefaut: parseInt(String(prescription.duree)) || 7,
+        });
+        Toast.show({
+          type: 'success',
+          text1: 'Traitement démarré !',
+          text2: `${count} rappel${count > 1 ? 's' : ''} programmé${count > 1 ? 's' : ''} sur votre téléphone`,
+        });
+      } else {
+        Toast.show({
+          type: 'success',
+          text1: 'Traitement démarré',
+          text2: 'Activez les notifications pour recevoir les rappels',
+        });
+      }
 
-      Toast.show({ type: 'success', text1: 'Traitement démarré !', text2: 'Vos rappels de médicaments sont activés' });
       setModalVisible(false);
       router.back();
     } catch (error: any) {

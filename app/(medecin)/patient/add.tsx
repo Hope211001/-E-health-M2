@@ -9,8 +9,14 @@ import { auth } from '../../../api/firebase';
 // Schéma de validation Zod
 const patientSchema = z.object({
   email: z.string().email({ message: "Email invalide" }),
-  tel: z.string().min(8, { message: "Numéro de téléphone invalide" }),
-  pass: z.string().min(6, { message: "Le mot de passe doit faire 6 caractères" }),
+  tel: z.string()
+    .refine((v) => v.replace(/\D/g, '').length >= 9, {
+      message: "Numéro trop court (ex: 0341234567)"
+    })
+    .refine((v) => v.replace(/\D/g, '').length <= 15, {
+      message: "Numéro trop long"
+    }),
+  pass: z.string().min(6, { message: "Le mot de passe doit faire 6 caractères minimum" }),
   confirm: z.string()
 }).refine((data) => data.pass === data.confirm, {
   message: "Les mots de passe ne correspondent pas",
@@ -95,12 +101,13 @@ export default function AddPatient() {
 
           <Text className="text-slate-700 font-bold mb-2 ml-1">Téléphone</Text>
           <TextInput
-            className="bg-slate-50 p-4 rounded-2xl mb-4 border border-slate-100"
-            placeholder="06 00 00 00 00"
+            className="bg-slate-50 p-4 rounded-2xl mb-1 border border-slate-100"
+            placeholder="034 12 345 67"
             value={form.tel}
             onChangeText={(v) => setForm({ ...form, tel: v })}
             keyboardType="phone-pad"
           />
+          <Text className="text-slate-400 text-xs ml-1 mb-4">Format Madagascar — 10 chiffres commençant par 0</Text>
 
           <View className="h-[1px] bg-slate-100 my-4" />
 

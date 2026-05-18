@@ -1,66 +1,63 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
+import {
+  View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet,
+  KeyboardAvoidingView, Platform,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import Toast from 'react-native-toast-message';
 import { z } from 'zod';
 import { APP_ROUTES } from '@/constants/routes';
-
-// On importe directement le SERVICE et non le controller
+import { APP, Colors, Radius, Shadows, Spacing } from '@/constants/theme';
 import { authService } from '../../api/authService';
+import { User } from '../../types/collection';
 
-// Schéma de validation Zod
 const loginSchema = z.object({
   email: z.string().email({ message: "Format email invalide" }),
   password: z.string().min(6, { message: "Le mot de passe doit faire au moins 6 caractères" }),
 });
 
+function redirectByRole(router: ReturnType<typeof useRouter>, user: User) {
+  switch (user.role) {
+    case 'medecin':
+      router.replace(APP_ROUTES.MEDECIN.HOME); break;
+    case 'patient':
+      router.replace(APP_ROUTES.PATIENT.HOME); break;
+    case 'admin':
+    case 'superadmin':
+      router.replace(APP_ROUTES.ADMIN.HOME); break;
+  }
+}
+
 export default function LoginScreen() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
-    // 1. Validation locale avec Zod
     const validation = loginSchema.safeParse({ email, password });
-    
     if (!validation.success) {
-    const errorMessage = validation.error.issues[0]?.message || "Erreur de validation";
-    Toast.show({
-      type: 'error',
-      text1: 'Champs invalides',
-      text2: errorMessage
-    });
-    return;
-  }
+      Toast.show({
+        type: 'error',
+        text1: 'Champs invalides',
+        text2: validation.error.issues[0]?.message || "Erreur de validation",
+      });
+      return;
+    }
 
     setLoading(true);
-
     try {
-      // 2. Appel direct du SERVICE (Axios -> Express -> Firebase)
       const user = await authService.login(email, password);
-
-      Toast.show({
-        type: 'success',
-        text1: 'Succès',
-        text2: `Bienvenue, ${user.role}`
-      });
-
-      // 3. Redirection basée sur le rôle reçu du Backend
-      if (user.role === 'medecin') {
-        router.replace(APP_ROUTES.MEDECIN.HOME);
-      } else if (user.role === 'patient') {
-        router.replace(APP_ROUTES.PATIENT.HOME );
-      } else if (user.role === 'superadmin') {
-        router.replace(APP_ROUTES.MEDECIN.HOME);
-      }
-
+      Toast.show({ type: 'success', text1: 'Bienvenue', text2: `Espace ${user.role}` });
+      redirectByRole(router, user);
     } catch (error: any) {
-      // Gestion des erreurs (Email incorrect, mot de passe faux, etc.)
       Toast.show({
         type: 'error',
         text1: 'Erreur de connexion',
-        text2: error.response?.data?.error || "Identifiants incorrects"
+        text2: error.response?.data?.error || "Identifiants incorrects",
       });
     } finally {
       setLoading(false);
@@ -68,53 +65,188 @@ export default function LoginScreen() {
   };
 
   return (
-    <View className="flex-1 bg-slate-50 justify-center px-6">
-      <View className="items-center mb-10">
-        <Text className="text-4xl font-extrabold text-blue-600">PatientMed</Text>
-        <Text className="text-slate-500 mt-2">Connectez-vous à votre espace</Text>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      style={styles.container}
+    >
+      <View style={styles.logoWrap}>
+        <View style={styles.logoCircle}>
+          <Ionicons name="heart" size={32} color="white" />
+        </View>
+        <Text style={styles.appName}>{APP.name}</Text>
+        <Text style={styles.subtitle}>Connectez-vous à votre espace</Text>
       </View>
 
-      <View className="bg-white p-8 rounded-3xl shadow-xl shadow-slate-200 border border-slate-100">
-        <Text className="text-slate-700 font-bold mb-2 ml-1">Email</Text>
+      <View style={styles.card}>
+        <Text style={styles.label}>Email</Text>
         <TextInput
-          className="bg-slate-50 p-4 rounded-2xl mb-4 border border-slate-200 text-slate-900"
+          style={styles.input}
           placeholder="email@exemple.com"
+          placeholderTextColor={Colors.textMuted}
           value={email}
           onChangeText={setEmail}
           autoCapitalize="none"
           keyboardType="email-address"
         />
 
-        <Text className="text-slate-700 font-bold mb-2 ml-1">Mot de passe</Text>
-        <TextInput
-          className="bg-slate-50 p-4 rounded-2xl mb-8 border border-slate-200 text-slate-900"
-          placeholder="••••••••"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-        />
+        <Text style={styles.label}>Mot de passe</Text>
+        <View style={styles.passwordWrap}>
+          <TextInput
+            style={styles.passwordInput}
+            placeholder="••••••••"
+            placeholderTextColor={Colors.textMuted}
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry={!showPassword}
+          />
+          <TouchableOpacity
+            style={styles.eyeBtn}
+            onPress={() => setShowPassword((v) => !v)}
+          >
+            <Ionicons
+              name={showPassword ? 'eye-off' : 'eye'}
+              size={22}
+              color={Colors.textMuted}
+            />
+          </TouchableOpacity>
+        </View>
 
-        <TouchableOpacity 
-          className="bg-blue-600 p-4 rounded-2xl items-center shadow-lg shadow-blue-300"
+        <TouchableOpacity
+          style={styles.forgotBtn}
+          onPress={() => router.push(APP_ROUTES.AUTH.FORGOT_PASSWORD)}
+        >
+          <Text style={styles.forgotTxt}>Mot de passe oublié ?</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.primaryBtn}
           onPress={handleLogin}
           disabled={loading}
+          activeOpacity={0.85}
         >
-          {loading ? (
-            <ActivityIndicator color="white" />
-          ) : (
-            <Text className="text-white font-bold text-lg">Se connecter</Text>
-          )}
+          <LinearGradient
+            colors={[Colors.primary, Colors.primaryDark]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.primaryBtnGradient}
+          >
+            {loading
+              ? <ActivityIndicator color="white" />
+              : <Text style={styles.primaryBtnText}>Se connecter</Text>}
+          </LinearGradient>
         </TouchableOpacity>
       </View>
 
-      <TouchableOpacity 
-        className="mt-8 items-center" 
-        onPress={() => router.push(APP_ROUTES.AUTH.REGISTER)}
-      >
-        <Text className="text-slate-500 text-base">
-          Pas de compte ? <Text className="text-blue-600 font-bold">Inscrivez-vous</Text>
-        </Text>
-      </TouchableOpacity>
-    </View>
+      <Text style={styles.note}>
+        Comptes créés par votre administrateur ou votre médecin traitant.
+      </Text>
+    </KeyboardAvoidingView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: Colors.background,
+    justifyContent: 'center',
+    paddingHorizontal: Spacing.xl,
+  },
+  logoWrap: {
+    alignItems: 'center',
+    marginBottom: Spacing['2xl'],
+  },
+  logoCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: Colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing.md,
+    ...Shadows.primary,
+  },
+  appName: {
+    fontSize: 36,
+    fontWeight: '900',
+    color: Colors.primaryDark,
+    letterSpacing: -1,
+  },
+  subtitle: {
+    color: Colors.textSecondary,
+    marginTop: 4,
+  },
+  card: {
+    backgroundColor: Colors.surface,
+    padding: Spacing['2xl'],
+    borderRadius: Radius['2xl'],
+    borderWidth: 1,
+    borderColor: Colors.border,
+    ...Shadows.md,
+  },
+  label: {
+    color: Colors.textPrimary,
+    fontWeight: '700',
+    marginBottom: 6,
+    marginLeft: 4,
+    fontSize: 14,
+  },
+  input: {
+    backgroundColor: Colors.surfaceAlt,
+    padding: 14,
+    borderRadius: Radius.md,
+    marginBottom: Spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    color: Colors.textPrimary,
+    fontSize: 15,
+  },
+  passwordWrap: {
+    backgroundColor: Colors.surfaceAlt,
+    borderRadius: Radius.md,
+    marginBottom: 6,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  passwordInput: {
+    flex: 1,
+    padding: 14,
+    color: Colors.textPrimary,
+    fontSize: 15,
+  },
+  eyeBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+  },
+  forgotBtn: {
+    alignSelf: 'flex-end',
+    marginBottom: Spacing.lg,
+  },
+  forgotTxt: {
+    color: Colors.primary,
+    fontWeight: '600',
+    fontSize: 13,
+  },
+  primaryBtn: {
+    borderRadius: Radius.md,
+    overflow: 'hidden',
+    ...Shadows.primary,
+  },
+  primaryBtnGradient: {
+    padding: 16,
+    alignItems: 'center',
+  },
+  primaryBtnText: {
+    color: Colors.textInverse,
+    fontWeight: '700',
+    fontSize: 16,
+  },
+  note: {
+    color: Colors.textMuted,
+    textAlign: 'center',
+    fontSize: 13,
+    marginTop: Spacing['2xl'],
+    paddingHorizontal: Spacing.xl,
+  },
+});

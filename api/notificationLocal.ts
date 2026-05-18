@@ -1,16 +1,36 @@
-import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
+// Détecte si on tourne dans Expo Go (l'app jaune) — depuis SDK 53, expo-notifications
+// n'y est plus supporté et l'import au top-level crashe. On charge donc le module
+// uniquement dans un build natif (APK / dev-client).
+const isExpoGo = Constants.executionEnvironment === 'storeClient';
+
+// Lazy import : ne charge expo-notifications que si on est dans un vrai build.
+let Notifications: typeof import('expo-notifications') | null = null;
+try {
+  if (!isExpoGo) {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    Notifications = require('expo-notifications');
+    Notifications?.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldPlaySound: true,
+        shouldSetBadge: true,
+        shouldShowBanner: true,
+        shouldShowList: true,
+      }),
+    });
+  }
+} catch (e) {
+  console.warn('expo-notifications non disponible dans cet environnement :', e);
+}
 
 export async function requestNotificationPermission(): Promise<boolean> {
+  if (!Notifications) {
+    console.warn('Notifications désactivées (Expo Go). Utilise un build natif.');
+    return false;
+  }
+
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('rappels-medicaments', {
       name: 'Rappels de médicaments',
@@ -52,6 +72,8 @@ function buildTriggerDate(heurePrevu: string, jourOffset: number): Date | null {
 }
 
 export async function scheduleAlerteNotification(p: ScheduleAlerteParams): Promise<string | null> {
+  if (!Notifications) return null;
+
   const triggerDate = buildTriggerDate(p.heurePrevu, p.jourOffset);
   if (!triggerDate) return null;
 
@@ -106,6 +128,8 @@ export async function schedulePrescriptionNotifications(
 ): Promise<{ count: number; ids: string[] }> {
   const ids: string[] = [];
 
+  if (!Notifications) return { count: 0, ids };
+
   for (const med of p.medicaments) {
     const moments = parseMomentsActifs(med.frequence || '');
     if (moments.length === 0) continue;
@@ -131,5 +155,6 @@ export async function schedulePrescriptionNotifications(
 }
 
 export async function cancelAllScheduledNotifications(): Promise<void> {
+  if (!Notifications) return;
   await Notifications.cancelAllScheduledNotificationsAsync();
 }

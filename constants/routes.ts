@@ -1,7 +1,8 @@
 export const APP_ROUTES = {
   AUTH: {
     LOGIN: "/(auth)/login",
-    REGISTER:"/(auth)/register-medecin"
+    REGISTER: "/(auth)/register-medecin",
+    FORGOT_PASSWORD: "/(auth)/forgot-password",
   },
   MEDECIN: {
     REGISTER: "/(medecin)/register-medecin",
@@ -19,11 +20,18 @@ export const APP_ROUTES = {
     PARAMETRE: {
       PROFIL: "/(medecin)/parametre/profil",
     },
-
   },
   PATIENT: {
     REGISTER: "/(patient)/register-patient",
     HOME: "/(patient)",
     MES_RAPPELS: "/(patient)/rappels",
-  }
+  },
+  ADMIN: {
+    HOME: "/(admin)",
+    MEDECINS: "/(admin)/medecins",
+    MEDECIN_ADD: "/(admin)/medecin-add",
+    ADMINS: "/(admin)/admins",
+    ADMIN_ADD: "/(admin)/admin-add",
+    PATIENTS: "/(admin)/patients",
+  },
 } as const;

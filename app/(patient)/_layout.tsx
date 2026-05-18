@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { requestNotificationPermission } from '../../api/notificationLocal';
+import { Colors } from '@/constants/theme';
 
 export default function PatientLayout() {
   useEffect(() => {
@@ -12,35 +13,44 @@ export default function PatientLayout() {
 
   return (
     <Tabs screenOptions={{
-      tabBarActiveTintColor: '#4F46E5',
+      tabBarActiveTintColor: Colors.patient,
+      tabBarInactiveTintColor: Colors.textMuted,
+      tabBarStyle: {
+        backgroundColor: Colors.surface,
+        borderTopColor: Colors.border,
+        height: 64,
+        paddingBottom: 8,
+        paddingTop: 8,
+      },
+      tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
       headerShown: false,
     }}>
       <Tabs.Screen
         name="index"
         options={{
           title: 'Accueil',
-          tabBarIcon: ({ color }) => <Ionicons name="home" size={24} color={color} />,
+          tabBarIcon: ({ color }) => <Ionicons name="home" size={22} color={color} />,
         }}
       />
       <Tabs.Screen
         name="ordonnance"
         options={{
           title: 'Ordonnances',
-          tabBarIcon: ({ color }) => <Ionicons name="document-text" size={24} color={color} />,
+          tabBarIcon: ({ color }) => <Ionicons name="document-text" size={22} color={color} />,
         }}
       />
       <Tabs.Screen
         name="rappels"
         options={{
           title: 'Rappels',
-          tabBarIcon: ({ color }) => <Ionicons name="alarm" size={24} color={color} />,
+          tabBarIcon: ({ color }) => <Ionicons name="alarm" size={22} color={color} />,
         }}
       />
       <Tabs.Screen
         name="parametres"
         options={{
           title: 'Paramètres',
-          tabBarIcon: ({ color }) => <Ionicons name="settings" size={24} color={color} />,
+          tabBarIcon: ({ color }) => <Ionicons name="settings" size={22} color={color} />,
         }}
       />
       {/* Écran caché du tab bar */}

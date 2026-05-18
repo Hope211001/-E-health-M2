@@ -1,13 +1,16 @@
 import { Timestamp } from 'firebase/firestore';
-export type UserRole = 'medecin' | 'receptionniste' | 'patient' | 'superadmin';
+export type UserRole = 'medecin' | 'patient' | 'admin' | 'superadmin';
+export type AuthProvider = 'password' | 'google';
 export interface User {
     uid: string;
     email: string;
-    password: string;
-    nom?:string;
-    prenom?:string;
+    password?: string;
+    nom?: string;
+    prenom?: string;
     role: UserRole;
-    telephone: string;
+    telephone?: string;
+    photoURL?: string;
+    authProvider?: AuthProvider;
     dateCreation: Timestamp;
     statut: 'actif' | 'inactif';
     dateNaissance?: Timestamp;

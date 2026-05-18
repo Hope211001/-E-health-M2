@@ -5,6 +5,7 @@ import Toast from 'react-native-toast-message';
 import { z } from 'zod';
 import { authService } from '../../../api/authService';
 import { auth } from '../../../api/firebase';
+import { PasswordInput } from '../../../components/PasswordInput';
 
 // Schéma de validation Zod
 const patientSchema = z.object({
@@ -112,19 +113,17 @@ export default function AddPatient() {
           <View className="h-[1px] bg-slate-100 my-4" />
 
           <Text className="text-slate-700 font-bold mb-2 ml-1">Mot de passe provisoire</Text>
-          <TextInput
-            className="bg-slate-50 p-4 rounded-2xl mb-4 border border-slate-100"
+          <PasswordInput
+            containerClassName="bg-slate-50 rounded-2xl mb-4 border border-slate-100 flex-row items-center"
             placeholder="••••••••"
-            secureTextEntry
             value={form.pass}
             onChangeText={(v) => setForm({ ...form, pass: v })}
           />
 
           <Text className="text-slate-700 font-bold mb-2 ml-1">Confirmer</Text>
-          <TextInput
-            className="bg-slate-50 p-4 rounded-2xl mb-8 border border-slate-100"
+          <PasswordInput
+            containerClassName="bg-slate-50 rounded-2xl mb-8 border border-slate-100 flex-row items-center"
             placeholder="••••••••"
-            secureTextEntry
             value={form.confirm}
             onChangeText={(v) => setForm({ ...form, confirm: v })}
           />

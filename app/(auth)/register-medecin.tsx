@@ -1,140 +1,108 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
+import React from 'react';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import Toast from 'react-native-toast-message';
-import { z } from 'zod';
-import { authService } from '../../api/authService';
 import { APP_ROUTES } from '@/constants/routes';
+import { Colors, Radius, Shadows, Spacing } from '@/constants/theme';
 
-// Schéma de validation Zod spécifique au médecin
-const medecinSchema = z.object({
-  email: z.string().email({ message: "Email professionnel invalide" }),
-  spec: z.string().min(3, { message: "La spécialité est requise" }),
-  ordre: z.string().min(5, { message: "N° d'ordre national requis" }),
-  tel: z.string().min(8, { message: "Numéro de téléphone trop court" }),
-  pass: z.string().min(6, { message: "Mot de passe : 6 caractères minimum" }),
-  confirm: z.string()
-}).refine((data) => data.pass === data.confirm, {
-  message: "Les mots de passe ne correspondent pas",
-  path: ["confirm"],
-});
-
-export default function RegisterMedecin() {
+export default function RegisterInfoScreen() {
   const router = useRouter();
-  const [form, setForm] = useState({ email: '', tel: '', spec: '', ordre: '', pass: '', confirm: '' });
-  const [loading, setLoading] = useState(false);
-
-  const handleRegister = async () => {
-    const validation = medecinSchema.safeParse(form);
-    if (!validation.success) {
-      Toast.show({
-        type: 'error',
-        text1: 'Validation',
-        text2: validation.error.issues[0].message
-      });
-      return;
-    }
-
-    setLoading(true);
-    try {
-      // Transformation des spécialités en tableau (séparées par des virgules)
-      const specArray = form.spec.split(',').map(s => s.trim());
-
-      await authService.registerMedecin(form.email, form.pass, form.tel, specArray, form.ordre);
-
-      Toast.show({ type: 'success', text1: 'Compte créé', text2: 'Bienvenue au réseau PatientMed' });
-      router.replace(APP_ROUTES.MEDECIN.HOME); // Redirection vers l'espace médecin
-
-    } catch (error: any) {
-      console.log("FULL ERROR OBJ:", error); // Regarde ton terminal VS Code (Front)
-
-      Toast.show({
-        type: 'error',
-        text1: 'Détail Erreur',
-        text2: error.response?.data?.error || error.message || "Erreur réseau"
-      });
-
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1 bg-violet-50">
-      <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 24, justifyContent: 'center' }}>
-
-        <View className="items-center mb-8">
-          <Text className="text-3xl font-black text-violet-800">Espace Praticien</Text>
-          <Text className="text-slate-500 mt-2 text-center">Créez votre profil professionnel sécurisé</Text>
+    <ScrollView style={styles.container}>
+      <View style={styles.content}>
+        <View style={styles.iconWrap}>
+          <View style={styles.iconCircle}>
+            <Ionicons name="information-circle" size={32} color="white" />
+          </View>
+          <Text style={styles.title}>Créer un compte</Text>
         </View>
 
-        <View className="bg-white p-6 rounded-[32px] shadow-xl shadow-violet-100 border border-white">
-          <TextInput
-            className="bg-slate-50 p-4 rounded-2xl mb-4 border border-slate-100"
-            placeholder="Email professionnel"
-            value={form.email}
-            onChangeText={(v) => setForm({ ...form, email: v })}
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
-
-          <View className="flex-row gap-3 mb-4">
-            <TextInput
-              className="flex-1 bg-slate-50 p-4 rounded-2xl border border-slate-100"
-              placeholder="Spécialité"
-              value={form.spec}
-              onChangeText={(v) => setForm({ ...form, spec: v })}
-            />
-            <TextInput
-              className="flex-1 bg-slate-50 p-4 rounded-2xl border border-slate-100"
-              placeholder="N° Ordre"
-              value={form.ordre}
-              onChangeText={(v) => setForm({ ...form, ordre: v })}
-            />
+        <View style={styles.card}>
+          <View style={styles.row}>
+            <Text style={styles.icon}>👨‍⚕️</Text>
+            <View style={styles.rowContent}>
+              <Text style={styles.rowTitle}>Vous êtes médecin ?</Text>
+              <Text style={styles.rowText}>
+                Les comptes médecins sont créés par un administrateur du réseau Salama.
+                Contactez votre administrateur pour obtenir vos identifiants.
+              </Text>
+            </View>
           </View>
 
-          <TextInput
-            className="bg-slate-50 p-4 rounded-2xl mb-4 border border-slate-100"
-            placeholder="Téléphone"
-            value={form.tel}
-            onChangeText={(v) => setForm({ ...form, tel: v })}
-            keyboardType="phone-pad"
-          />
+          <View style={styles.divider} />
 
-          <TextInput
-            className="bg-slate-50 p-4 rounded-2xl mb-4 border border-slate-100"
-            placeholder="Mot de passe"
-            secureTextEntry
-            value={form.pass}
-            onChangeText={(v) => setForm({ ...form, pass: v })}
-          />
-
-          <TextInput
-            className="bg-slate-50 p-4 rounded-2xl mb-6 border border-slate-100"
-            placeholder="Confirmer mot de passe"
-            secureTextEntry
-            value={form.confirm}
-            onChangeText={(v) => setForm({ ...form, confirm: v })}
-          />
+          <View style={styles.row}>
+            <Text style={styles.icon}>👤</Text>
+            <View style={styles.rowContent}>
+              <Text style={styles.rowTitle}>Vous êtes patient ?</Text>
+              <Text style={styles.rowText}>
+                Votre médecin traitant doit créer votre compte. Demandez-lui vos identifiants
+                lors de votre prochaine consultation.
+              </Text>
+            </View>
+          </View>
 
           <TouchableOpacity
-            className="bg-violet-600 p-5 rounded-2xl items-center shadow-lg shadow-violet-200"
-            onPress={handleRegister}
-            disabled={loading}
+            style={styles.primaryBtn}
+            onPress={() => router.replace(APP_ROUTES.AUTH.LOGIN)}
+            activeOpacity={0.85}
           >
-            {loading ? (
-              <ActivityIndicator color="white" />
-            ) : (
-              <Text className="text-white font-bold text-lg">S'inscrire</Text>
-            )}
+            <LinearGradient
+              colors={[Colors.primary, Colors.primaryDark]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.primaryBtnGradient}
+            >
+              <Text style={styles.primaryBtnText}>Aller à la connexion</Text>
+            </LinearGradient>
           </TouchableOpacity>
         </View>
-
-        <TouchableOpacity className="mt-8 items-center" onPress={() => router.back()}>
-          <Text className="text-slate-400">Déjà membre ? <Text className="text-violet-600 font-bold">Se connecter</Text></Text>
-        </TouchableOpacity>
-
-      </ScrollView>
-    </KeyboardAvoidingView>
+      </View>
+    </ScrollView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: Colors.background },
+  content: { padding: Spacing.xl, paddingTop: 64 },
+  iconWrap: { alignItems: 'center', marginBottom: Spacing['2xl'] },
+  iconCircle: {
+    width: 64, height: 64, borderRadius: 32,
+    backgroundColor: Colors.primary,
+    alignItems: 'center', justifyContent: 'center',
+    marginBottom: Spacing.md,
+    ...Shadows.primary,
+  },
+  title: { fontSize: 24, fontWeight: '800', color: Colors.primaryDark },
+  card: {
+    backgroundColor: Colors.surface,
+    padding: Spacing.xl,
+    borderRadius: Radius['2xl'],
+    borderWidth: 1, borderColor: Colors.border,
+    ...Shadows.md,
+  },
+  row: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+  icon: { fontSize: 32 },
+  rowContent: { flex: 1 },
+  rowTitle: {
+    fontSize: 16, fontWeight: '700',
+    color: Colors.textPrimary, marginBottom: 6,
+  },
+  rowText: {
+    color: Colors.textSecondary,
+    lineHeight: 21,
+  },
+  divider: {
+    height: 1, backgroundColor: Colors.border,
+    marginVertical: Spacing.lg,
+  },
+  primaryBtn: {
+    borderRadius: Radius.md, overflow: 'hidden',
+    marginTop: Spacing.lg,
+    ...Shadows.primary,
+  },
+  primaryBtnGradient: { padding: 16, alignItems: 'center' },
+  primaryBtnText: { color: Colors.textInverse, fontWeight: '700', fontSize: 16 },
+});

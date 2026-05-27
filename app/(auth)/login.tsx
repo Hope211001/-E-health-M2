@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet,
-  KeyboardAvoidingView, Platform,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -65,9 +65,11 @@ export default function LoginScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    <KeyboardAwareScrollView
       style={styles.container}
+      contentContainerStyle={styles.contentContainer}
+      keyboardShouldPersistTaps="handled"
+      bottomOffset={20}
     >
       <View style={styles.logoWrap}>
         <View style={styles.logoCircle}>
@@ -140,7 +142,7 @@ export default function LoginScreen() {
       <Text style={styles.note}>
         Comptes créés par votre administrateur ou votre médecin traitant.
       </Text>
-    </KeyboardAvoidingView>
+    </KeyboardAwareScrollView>
   );
 }
 
@@ -148,6 +150,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
+  },
+  contentContainer: {
+    flexGrow: 1,
     justifyContent: 'center',
     paddingHorizontal: Spacing.xl,
   },

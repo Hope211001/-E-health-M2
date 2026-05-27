@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -109,8 +110,12 @@ export default function AjoutOrdonnance() {
 
   return (
     <SafeAreaView className="flex-1 bg-slate-50">
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1">
-        <ScrollView className="p-6" keyboardShouldPersistTaps="handled">
+      <KeyboardAwareScrollView
+        className="flex-1"
+        contentContainerStyle={{ padding: 24 }}
+        keyboardShouldPersistTaps="handled"
+        bottomOffset={20}
+      >
           
           <View className="flex-row items-center mb-8">
             <TouchableOpacity onPress={() => router.back()} className="bg-white p-3 rounded-2xl shadow-sm">
@@ -265,8 +270,7 @@ export default function AjoutOrdonnance() {
               </View>
             )}
           </TouchableOpacity>
-        </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }

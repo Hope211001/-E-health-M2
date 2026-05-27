@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useRef } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, FlatList,
-  ActivityIndicator, KeyboardAvoidingView, Platform,
+  ActivityIndicator,
 } from 'react-native';
+import { KeyboardStickyView } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -180,10 +181,7 @@ export default function ChatScreen() {
       )}
 
       {/* Barre de saisie */}
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={0}
-      >
+      <KeyboardStickyView>
         <View className="bg-white px-4 py-3 border-t border-slate-100 flex-row items-end">
           <TextInput
             className="flex-1 bg-slate-50 rounded-2xl px-5 py-3 text-slate-900 text-[15px] max-h-[120px] border border-slate-100"
@@ -205,7 +203,7 @@ export default function ChatScreen() {
             )}
           </TouchableOpacity>
         </View>
-      </KeyboardAvoidingView>
+      </KeyboardStickyView>
     </SafeAreaView>
   );
 }

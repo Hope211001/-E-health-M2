@@ -1,10 +1,13 @@
 import { useEffect } from 'react';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { requestNotificationPermission } from '../../api/notificationLocal';
 import { Colors } from '@/constants/theme';
 
 export default function PatientLayout() {
+  const insets = useSafeAreaInsets();
+
   useEffect(() => {
     requestNotificationPermission().catch((e) =>
       console.warn('Permission notifications refusée ou erreur:', e)
@@ -18,8 +21,8 @@ export default function PatientLayout() {
       tabBarStyle: {
         backgroundColor: Colors.surface,
         borderTopColor: Colors.border,
-        height: 64,
-        paddingBottom: 8,
+        height: 64 + insets.bottom,
+        paddingBottom: 8 + insets.bottom,
         paddingTop: 8,
       },
       tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },

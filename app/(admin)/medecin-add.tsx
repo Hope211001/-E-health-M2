@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, ActivityIndicator,
-  ScrollView, StyleSheet, KeyboardAvoidingView, Platform,
+  View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -61,11 +61,12 @@ export default function MedecinAddScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    <KeyboardAwareScrollView
       style={styles.container}
+      contentContainerStyle={styles.scroll}
+      keyboardShouldPersistTaps="handled"
+      bottomOffset={20}
     >
-      <ScrollView contentContainerStyle={styles.scroll}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
             <Ionicons name="arrow-back" size={22} color={Colors.textPrimary} />
@@ -115,8 +116,7 @@ export default function MedecinAddScreen() {
             <Text style={styles.cancelTxt}>Annuler</Text>
           </TouchableOpacity>
         </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+    </KeyboardAwareScrollView>
   );
 }
 

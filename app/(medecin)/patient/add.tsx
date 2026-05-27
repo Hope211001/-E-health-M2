@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { useRouter } from 'expo-router';
 import Toast from 'react-native-toast-message';
 import { z } from 'zod';
@@ -81,8 +82,12 @@ export default function AddPatient() {
   };
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1 bg-sky-50">
-      <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: 24 }}>
+    <KeyboardAwareScrollView
+      className="flex-1 bg-sky-50"
+      contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: 24 }}
+      keyboardShouldPersistTaps="handled"
+      bottomOffset={20}
+    >
 
         <View className="items-center mb-8">
           <Text className="text-3xl font-black text-sky-700">Nouveau Patient</Text>
@@ -145,7 +150,6 @@ export default function AddPatient() {
           <Text className="text-slate-400 font-medium">Annuler l'enregistrement</Text>
         </TouchableOpacity>
 
-      </ScrollView>
-    </KeyboardAvoidingView>
+    </KeyboardAwareScrollView>
   );
 }

@@ -1,12 +1,14 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useContext } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AuthContext } from '../../context/AuthContext';
 import { Colors } from '@/constants/theme';
 
 export default function AdminLayout() {
   const { user } = useContext(AuthContext);
   const isSuperadmin = user?.role === 'superadmin';
+  const insets = useSafeAreaInsets();
 
   return (
     <Tabs screenOptions={{
@@ -15,8 +17,8 @@ export default function AdminLayout() {
       tabBarStyle: {
         backgroundColor: Colors.surface,
         borderTopColor: Colors.border,
-        height: 64,
-        paddingBottom: 8,
+        height: 64 + insets.bottom,
+        paddingBottom: 8 + insets.bottom,
         paddingTop: 8,
       },
       tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },

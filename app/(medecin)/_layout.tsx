@@ -1,8 +1,11 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '@/constants/theme';
 
 export default function MedecinLayout() {
+  const insets = useSafeAreaInsets();
+
   return (
     <Tabs screenOptions={{
       tabBarActiveTintColor: Colors.primary,
@@ -10,8 +13,8 @@ export default function MedecinLayout() {
       tabBarStyle: {
         backgroundColor: Colors.surface,
         borderTopColor: Colors.border,
-        height: 64,
-        paddingBottom: 8,
+        height: 64 + insets.bottom,
+        paddingBottom: 8 + insets.bottom,
         paddingTop: 8,
       },
       tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },

@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, StatusBar, ImageBackground } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, StatusBar, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { auth, db } from '../../api/firebase';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
@@ -23,29 +23,29 @@ export default function MedecinDashboard() {
     } catch (e) { console.error(e); }
   }, []);
 
-  useEffect(() => {
-    const fetchDashboard = async () => {
-      try {
-        const user = auth.currentUser;
-        if (!user) return;
-        const docSnap = await getDoc(doc(db, "medecins", user.uid));
-        if (docSnap.exists()) setDoctorData(docSnap.data());
-        const pSnap = await getDocs(query(collection(db, "patients"), where("medecinTraitantId", "==", user.uid)));
-        const oSnap = await getDocs(query(collection(db, "prescriptions"), where("medecinId", "==", user.uid)));
-        setStats({ patients: pSnap.size, ordonnances: oSnap.size });
-      } catch (e) { console.error(e); }
-      finally { setLoading(false); }
-    };
-    fetchDashboard();
-    fetchUnreadCount();
+  const fetchDashboard = useCallback(async () => {
+    try {
+      const user = auth.currentUser;
+      if (!user) return;
+      const docSnap = await getDoc(doc(db, "medecins", user.uid));
+      if (docSnap.exists()) setDoctorData(docSnap.data());
+      const pSnap = await getDocs(query(collection(db, "patients"), where("medecinTraitantId", "==", user.uid)));
+      const oSnap = await getDocs(query(collection(db, "prescriptions"), where("medecinId", "==", user.uid)));
+      setStats({ patients: pSnap.size, ordonnances: oSnap.size });
+    } catch (e) { console.error(e); }
+    finally { setLoading(false); }
   }, []);
 
-  // Rafraîchir le compteur à chaque retour sur l'écran
-  useFocusEffect(useCallback(() => { fetchUnreadCount(); }, [fetchUnreadCount]));
+  // Recharger les totaux + le nom + le compteur à CHAQUE retour sur l'écran
+  // (après ajout d'un patient/ordonnance), pas seulement au premier montage.
+  useFocusEffect(useCallback(() => {
+    fetchDashboard();
+    fetchUnreadCount();
+  }, [fetchDashboard, fetchUnreadCount]));
 
   if (loading) return (
     <View className="flex-1 justify-center items-center bg-white">
-      <ActivityIndicator size="large" color="#7C3AED" />
+      <ActivityIndicator size="large" color="#059669" />
       <Text className="mt-4 text-slate-400 font-medium">Chargement du cabinet...</Text>
     </View>
   );
@@ -57,10 +57,21 @@ export default function MedecinDashboard() {
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
         
         {/* --- HEADER PREMIUM --- */}
-        <View className="px-6 py-6 bg-purple-700 rounded-b-[50px] mb-8 shadow-2xl shadow-purple-300">
+        <View className="px-6 py-6 bg-emerald-600 rounded-b-[50px] mb-8 shadow-2xl shadow-emerald-200">
+          {/* Logo Mediora */}
+          <View className="flex-row items-center mb-5">
+            <View className="bg-white rounded-xl p-1">
+              <Image
+                source={require('../../assets/images/icon.png')}
+                style={{ width: 30, height: 30, borderRadius: 8 }}
+                resizeMode="contain"
+              />
+            </View>
+            <Text className="text-white text-xl font-black ml-2 tracking-tight">Mediora</Text>
+          </View>
           <View className="flex-row justify-between items-center mb-6">
             <View>
-              <Text className="text-purple-200 font-bold text-xs uppercase tracking-[2px]">Espace Médical</Text>
+              <Text className="text-emerald-100 font-bold text-xs uppercase tracking-[2px]">Espace Médical</Text>
               <Text className="text-3xl font-black text-white mt-1">Bonjour,</Text>
               <Text className="text-white text-2xl font-light opacity-90">Dr. {doctorData?.nom || "Spécialiste"}</Text>
             </View>
@@ -100,25 +111,25 @@ export default function MedecinDashboard() {
             {/* Stat Patients */}
             <TouchableOpacity 
                 onPress={() => router.push(APP_ROUTES.MEDECIN.PATIENT.LISTE as Href)}
-                className="flex-1 bg-slate-900 p-6 rounded-[35px] justify-between h-40 shadow-xl"
+                className="flex-1 bg-emerald-700 p-6 rounded-[35px] justify-between h-40 shadow-xl"
             >
-                <View className="bg-white/10 w-10 h-10 rounded-full items-center justify-center">
-                    <Ionicons name="people" size={20} color="#A78BFA" />
+                <View className="bg-white/20 w-10 h-10 rounded-full items-center justify-center">
+                    <Ionicons name="people" size={20} color="white" />
                 </View>
                 <View>
                     <Text className="text-white text-4xl font-black tracking-tighter">{stats.patients}</Text>
-                    <Text className="text-slate-400 font-bold text-[10px] uppercase">Patients Actifs</Text>
+                    <Text className="text-emerald-200 font-bold text-[10px] uppercase">Patients Actifs</Text>
                 </View>
             </TouchableOpacity>
 
             {/* Stat Ordonnances */}
-            <View className="flex-1 bg-purple-50 p-6 rounded-[35px] justify-between h-40 border border-purple-100">
-                <View className="bg-purple-600 w-10 h-10 rounded-full items-center justify-center">
+            <View className="flex-1 bg-emerald-50 p-6 rounded-[35px] justify-between h-40 border border-emerald-100">
+                <View className="bg-emerald-600 w-10 h-10 rounded-full items-center justify-center">
                     <Ionicons name="document-text" size={20} color="white" />
                 </View>
                 <View>
-                    <Text className="text-purple-900 text-4xl font-black tracking-tighter">{stats.ordonnances}</Text>
-                    <Text className="text-purple-400 font-bold text-[10px] uppercase">Ordonnances</Text>
+                    <Text className="text-emerald-900 text-4xl font-black tracking-tighter">{stats.ordonnances}</Text>
+                    <Text className="text-emerald-500 font-bold text-[10px] uppercase">Ordonnances</Text>
                 </View>
             </View>
         </View>
@@ -133,7 +144,7 @@ export default function MedecinDashboard() {
                     title="Nouveau Patient" 
                     subtitle="Enregistrer un dossier" 
                     icon="person-add" 
-                    color="#7C3AED" 
+                    color="#059669" 
                     onPress={() => router.push(APP_ROUTES.MEDECIN.PATIENT.ADD as Href)} 
                 />
                 
@@ -149,8 +160,8 @@ export default function MedecinDashboard() {
                     <SmallAction
                         title="Messages"
                         icon="chatbubbles"
-                        color="#7C3AED"
-                        bg="bg-purple-50"
+                        color="#059669"
+                        bg="bg-emerald-50"
                         onPress={() => router.push('/(conversation)/list' as Href)}
                     />
                 </View>
@@ -159,16 +170,16 @@ export default function MedecinDashboard() {
             {/* Bouton Messages */}
             <TouchableOpacity
                 onPress={() => router.push('/(conversation)/list' as Href)}
-                className="bg-purple-50 p-5 rounded-[30px] flex-row items-center mt-4 border border-purple-100"
+                className="bg-emerald-50 p-5 rounded-[30px] flex-row items-center mt-4 border border-emerald-100"
             >
-                <View className="bg-purple-600 p-3 rounded-xl mr-4">
+                <View className="bg-emerald-600 p-3 rounded-xl mr-4">
                     <Ionicons name="chatbubbles" size={22} color="white" />
                 </View>
                 <View className="flex-1">
                     <Text className="text-slate-900 font-black text-base">Messages</Text>
                     <Text className="text-slate-400 text-[10px] font-bold uppercase mt-0.5">Discuter avec vos patients</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={20} color="#A78BFA" />
+                <Ionicons name="chevron-forward" size={20} color="#34D399" />
             </TouchableOpacity>
         </View>
 
@@ -192,7 +203,7 @@ function BigAction({ title, subtitle, icon, color, onPress }: any) {
             className="w-[48%] bg-white p-6 rounded-[40px] h-52 justify-between border border-slate-100 shadow-sm"
             style={{ elevation: 3 }}
         >
-            <View className="bg-purple-50 w-14 h-14 rounded-2xl items-center justify-center">
+            <View className="bg-emerald-50 w-14 h-14 rounded-2xl items-center justify-center">
                 <Ionicons name={icon} size={30} color={color} />
             </View>
             <View>

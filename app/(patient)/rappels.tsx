@@ -63,7 +63,7 @@ export default function Rappels() {
     if (isPassedHour(alerte.heurePrevu)) {
       return { icon: 'warning' as const, color: '#F59E0B', bg: 'bg-amber-50', border: 'border-amber-200', label: 'En retard' };
     }
-    return { icon: 'time' as const, color: '#4F46E5', bg: 'bg-indigo-50', border: 'border-indigo-200', label: 'À venir' };
+    return { icon: 'time' as const, color: '#0EA5E9', bg: 'bg-sky-50', border: 'border-sky-200', label: 'À venir' };
   };
 
   // Compter les stats
@@ -102,7 +102,7 @@ export default function Rappels() {
           {/* Bouton Pris */}
           {!isPris && (
             <TouchableOpacity
-              className="bg-indigo-600 w-12 h-12 rounded-2xl items-center justify-center"
+              className="bg-sky-600 w-12 h-12 rounded-2xl items-center justify-center"
               onPress={() => handleMarkPris(item.id)}
               disabled={markingId === item.id}
             >
@@ -130,8 +130,8 @@ export default function Rappels() {
       {/* Header */}
       <View className="bg-white px-6 py-5 border-b border-slate-100">
         <View className="flex-row items-center mb-4">
-          <View className="bg-indigo-50 p-3 rounded-2xl mr-4">
-            <Ionicons name="alarm" size={20} color="#4F46E5" />
+          <View className="bg-sky-50 p-3 rounded-2xl mr-4">
+            <Ionicons name="alarm" size={20} color="#0EA5E9" />
           </View>
           <View>
             <Text className="text-slate-400 text-xs font-bold uppercase">Aujourd'hui</Text>
@@ -146,9 +146,9 @@ export default function Rappels() {
               <Ionicons name="checkmark-circle" size={14} color="#10B981" />
               <Text className="text-emerald-700 font-bold text-xs ml-1">{totalPris} pris</Text>
             </View>
-            <View className="bg-indigo-50 px-4 py-2 rounded-full border border-indigo-200 flex-row items-center">
-              <Ionicons name="time" size={14} color="#4F46E5" />
-              <Text className="text-indigo-700 font-bold text-xs ml-1">{totalRestant} restant{totalRestant > 1 ? 's' : ''}</Text>
+            <View className="bg-sky-50 px-4 py-2 rounded-full border border-sky-200 flex-row items-center">
+              <Ionicons name="time" size={14} color="#0EA5E9" />
+              <Text className="text-sky-700 font-bold text-xs ml-1">{totalRestant} restant{totalRestant > 1 ? 's' : ''}</Text>
             </View>
           </View>
         )}
@@ -156,7 +156,7 @@ export default function Rappels() {
 
       {loading ? (
         <View className="flex-1 justify-center items-center">
-          <ActivityIndicator color="#4F46E5" size="large" />
+          <ActivityIndicator color="#0EA5E9" size="large" />
         </View>
       ) : (
         <FlatList

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
+import { AppScrollView } from '@/components/AppScrollView';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
@@ -100,7 +100,7 @@ export default function AjoutOrdonnance() {
   if (fetchingPatient) {
     return (
       <View className="flex-1 justify-center items-center bg-slate-50">
-        <ActivityIndicator size="large" color="#2563eb" />
+        <ActivityIndicator size="large" color="#059669" />
         <Text className="mt-4 text-slate-500">Chargement du patient...</Text>
       </View>
     );
@@ -108,7 +108,7 @@ export default function AjoutOrdonnance() {
 
   return (
     <SafeAreaView className="flex-1 bg-slate-50">
-      <KeyboardAwareScrollView
+      <AppScrollView
         className="flex-1"
         contentContainerStyle={{ padding: 24 }}
         keyboardShouldPersistTaps="handled"
@@ -132,10 +132,10 @@ export default function AjoutOrdonnance() {
               <Text className="text-red-600 font-bold mt-2">Patient introuvable</Text>
             </View>
           ) : (
-            <View className="bg-blue-600 p-6 rounded-[28px] mb-6 flex-row items-center shadow-lg shadow-blue-200">
+            <View className="bg-emerald-600 p-6 rounded-[28px] mb-6 flex-row items-center shadow-lg shadow-emerald-200">
               <Ionicons name="person-circle" size={44} color="white" />
               <View className="ml-4">
-                <Text className="text-blue-100 text-[10px] font-bold uppercase tracking-widest">Patient sélectionné</Text>
+                <Text className="text-emerald-100 text-[10px] font-bold uppercase tracking-widest">Patient sélectionné</Text>
                 <Text className="text-white text-lg font-black">{selectedPatient.numeroPatient}</Text>
               </View>
             </View>
@@ -157,7 +157,7 @@ export default function AjoutOrdonnance() {
           {medicaments.map((med, index) => (
             <View key={index} className="bg-white p-6 rounded-[32px] mb-5 border border-slate-200 shadow-sm">
               <View className="flex-row justify-between items-center mb-4">
-                <Text className="text-blue-600 font-black">MÉDICAMENT #{index + 1}</Text>
+                <Text className="text-emerald-600 font-black">MÉDICAMENT #{index + 1}</Text>
                 {medicaments.length > 1 && (
                   <TouchableOpacity onPress={() => setMedicaments(medicaments.filter((_, i) => i !== index))} className="bg-red-50 p-2 rounded-lg">
                     <Ionicons name="trash" size={18} color="#ef4444" />
@@ -205,13 +205,13 @@ export default function AjoutOrdonnance() {
             </View>
           ))}
 
-          <TouchableOpacity onPress={addMed} className="flex-row items-center justify-center py-4 bg-blue-50 rounded-2xl border-dashed border border-blue-200 mb-6">
-            <Ionicons name="add-circle" size={24} color="#2563eb" />
-            <Text className="text-blue-600 font-bold ml-2">Ajouter une ligne</Text>
+          <TouchableOpacity onPress={addMed} className="flex-row items-center justify-center py-4 bg-emerald-50 rounded-2xl border-dashed border border-emerald-200 mb-6">
+            <Ionicons name="add-circle" size={24} color="#059669" />
+            <Text className="text-emerald-600 font-bold ml-2">Ajouter une ligne</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            className={`p-6 rounded-[24px] items-center shadow-xl mb-20 ${loading ? 'bg-slate-400' : 'bg-blue-600 shadow-blue-300'}`}
+            className={`p-6 rounded-[24px] items-center shadow-xl mb-20 ${loading ? 'bg-slate-400' : 'bg-emerald-600 shadow-emerald-300'}`}
             onPress={handleSave}
             disabled={loading || !selectedPatient}
           >
@@ -219,7 +219,7 @@ export default function AjoutOrdonnance() {
               <Text className="text-white font-black text-lg">Finaliser l'Ordonnance</Text>
             )}
           </TouchableOpacity>
-      </KeyboardAwareScrollView>
+      </AppScrollView>
     </SafeAreaView>
   );
 }

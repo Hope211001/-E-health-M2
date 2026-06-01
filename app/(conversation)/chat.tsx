@@ -1,9 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, FlatList,
-  ActivityIndicator,
+  ActivityIndicator, KeyboardAvoidingView, Platform,
 } from 'react-native';
-import { KeyboardStickyView } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -138,6 +137,10 @@ export default function ChatScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-slate-50">
+      <KeyboardAvoidingView
+        className="flex-1"
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
       {/* Header */}
       <View className="bg-white px-4 py-3 flex-row items-center border-b border-slate-100">
         <TouchableOpacity onPress={() => router.back()} className="bg-slate-50 p-2.5 rounded-xl mr-3">
@@ -181,8 +184,7 @@ export default function ChatScreen() {
       )}
 
       {/* Barre de saisie */}
-      <KeyboardStickyView>
-        <View className="bg-white px-4 py-3 border-t border-slate-100 flex-row items-end">
+      <View className="bg-white px-4 py-3 border-t border-slate-100 flex-row items-end">
           <TextInput
             className="flex-1 bg-slate-50 rounded-2xl px-5 py-3 text-slate-900 text-[15px] max-h-[120px] border border-slate-100"
             placeholder="Écrire un message..."
@@ -203,7 +205,7 @@ export default function ChatScreen() {
             )}
           </TouchableOpacity>
         </View>
-      </KeyboardStickyView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

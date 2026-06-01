@@ -56,8 +56,8 @@ export default function ListePatients() {
   const renderPatientItem = ({ item }: { item: Patient }) => (
     <View className="bg-white rounded-3xl p-5 mb-4 shadow-sm border border-slate-100">
       <View className="flex-row items-center">
-        <View className="w-14 h-14 bg-blue-100 rounded-2xl items-center justify-center">
-          <Ionicons name="person" size={24} color="#2563eb" />
+        <View className="w-14 h-14 bg-emerald-100 rounded-2xl items-center justify-center">
+          <Ionicons name="person" size={24} color="#059669" />
         </View>
 
         <View className="flex-1 ml-4">
@@ -90,7 +90,7 @@ export default function ListePatients() {
         </TouchableOpacity>
 
         <TouchableOpacity
-          className="flex-1 bg-blue-600 h-12 rounded-2xl flex-row items-center justify-center shadow-lg shadow-blue-200"
+          className="flex-1 bg-emerald-600 h-12 rounded-2xl flex-row items-center justify-center shadow-lg shadow-emerald-200"
           onPress={() => router.push({
             pathname: APP_ROUTES.MEDECIN.ORDONNANCE.ADD_BY_PATIENT,
             params: { patientId: item.id }
@@ -103,7 +103,7 @@ export default function ListePatients() {
 
       {/* Bouton Message */}
       <TouchableOpacity
-        className="bg-purple-50 h-12 rounded-2xl flex-row items-center justify-center mt-3 border border-purple-100"
+        className="bg-emerald-50 h-12 rounded-2xl flex-row items-center justify-center mt-3 border border-emerald-100"
         onPress={async () => {
           try {
             const conv = await conversationService.getOrCreate({ patientId: item.userId || item.id });
@@ -111,8 +111,8 @@ export default function ListePatients() {
           } catch (e) { console.error(e); }
         }}
       >
-        <Ionicons name="chatbubble-outline" size={18} color="#7C3AED" />
-        <Text className="text-purple-700 font-bold ml-2">Message</Text>
+        <Ionicons name="chatbubble-outline" size={18} color="#059669" />
+        <Text className="text-emerald-700 font-bold ml-2">Message</Text>
       </TouchableOpacity>
     </View>
   );
@@ -122,7 +122,7 @@ export default function ListePatients() {
       <View className="bg-white px-6 pt-4 pb-8 rounded-b-[40px] shadow-sm">
         <View className="flex-row justify-between items-center mb-6">
           <View>
-            <Text className="text-purple-600 font-bold text-xs tracking-widest">DOCTEUR</Text>
+            <Text className="text-emerald-600 font-bold text-xs tracking-widest">DOCTEUR</Text>
             <Text className="text-2xl font-black text-slate-900">Mes Patients</Text>
           </View>
         </View>
@@ -140,7 +140,7 @@ export default function ListePatients() {
 
       {loading && !refreshing ? (
         <View className="flex-1 justify-center items-center">
-          <ActivityIndicator color="#7C3AED" size="large" />
+          <ActivityIndicator color="#059669" size="large" />
         </View>
       ) : (
         <FlatList
@@ -161,7 +161,7 @@ export default function ListePatients() {
       )}
 
       <TouchableOpacity
-        className="absolute bottom-10 right-8 bg-purple-600 w-16 h-16 rounded-full items-center justify-center shadow-xl shadow-purple-400"
+        className="absolute bottom-10 right-8 bg-emerald-600 w-16 h-16 rounded-full items-center justify-center shadow-xl shadow-emerald-400"
         onPress={() => router.push(APP_ROUTES.MEDECIN.PATIENT.ADD as Href)}
       >
         <Ionicons name="add" size={30} color="white" />

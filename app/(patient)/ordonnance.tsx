@@ -68,7 +68,7 @@ export default function PatientOrdonnance() {
       <View className="flex-row mb-1">
         {/* Timeline */}
         <View className="items-center mr-4 w-5">
-          <View className={`w-3 h-3 rounded-full z-10 mt-6 ${item.statut === 'en_cours' ? 'bg-blue-600' : 'bg-indigo-600'}`} />
+          <View className={`w-3 h-3 rounded-full z-10 mt-6 ${item.statut === 'en_cours' ? 'bg-blue-600' : 'bg-sky-600'}`} />
           {index !== prescriptions.length - 1 && (
             <View className="w-[2px] flex-1 bg-slate-200 -mt-1" />
           )}
@@ -76,12 +76,12 @@ export default function PatientOrdonnance() {
 
         {/* Carte — toutes cliquables, navigation vers détail */}
         <TouchableOpacity
-          className={`flex-1 bg-white rounded-3xl p-5 mb-5 shadow-sm border ${canStart ? 'border-indigo-200' : 'border-slate-100'}`}
+          className={`flex-1 bg-white rounded-3xl p-5 mb-5 shadow-sm border ${canStart ? 'border-sky-200' : 'border-slate-100'}`}
           onPress={() => router.push({ pathname: '/(patient)/detail-prescription', params: { id: item.id } } as any)}
           activeOpacity={0.7}
         >
           <View className="flex-row justify-between items-center mb-3">
-            <Text className="text-indigo-600 font-bold text-sm">{formatDate(item.dateCreation)}</Text>
+            <Text className="text-sky-600 font-bold text-sm">{formatDate(item.dateCreation)}</Text>
             <View className={`${statut.bg} px-3 py-1 rounded-full border ${statut.border}`}>
               <Text className={`${statut.text} font-bold text-[10px] uppercase`}>{statut.label}</Text>
             </View>
@@ -95,8 +95,8 @@ export default function PatientOrdonnance() {
           {/* Médicaments en résumé */}
           <View className="flex-row flex-wrap gap-2 mb-3">
             {item.medicaments?.slice(0, 3).map((med: any, i: number) => (
-              <View key={i} className="bg-indigo-50 px-3 py-1.5 rounded-lg border border-indigo-100">
-                <Text className="text-indigo-700 text-[10px] font-bold">{med.nomMedicament}</Text>
+              <View key={i} className="bg-sky-50 px-3 py-1.5 rounded-lg border border-sky-100">
+                <Text className="text-sky-700 text-[10px] font-bold">{med.nomMedicament}</Text>
               </View>
             ))}
             {item.medicaments?.length > 3 && (
@@ -108,8 +108,8 @@ export default function PatientOrdonnance() {
           <View className="flex-row items-center justify-between mt-1">
             {canStart ? (
               <View className="flex-row items-center">
-                <Ionicons name="play-circle" size={16} color="#4F46E5" />
-                <Text className="text-indigo-600 font-bold text-[11px] ml-1">Appuyez pour voir le détail</Text>
+                <Ionicons name="play-circle" size={16} color="#0EA5E9" />
+                <Text className="text-sky-600 font-bold text-[11px] ml-1">Appuyez pour voir le détail</Text>
               </View>
             ) : (
               <View className="flex-row items-center">
@@ -128,8 +128,8 @@ export default function PatientOrdonnance() {
     <SafeAreaView className="flex-1 bg-slate-50">
       {/* Header */}
       <View className="bg-white px-6 py-5 flex-row items-center border-b border-slate-100">
-        <View className="bg-indigo-50 p-3 rounded-2xl mr-4">
-          <Ionicons name="document-text" size={20} color="#4F46E5" />
+        <View className="bg-sky-50 p-3 rounded-2xl mr-4">
+          <Ionicons name="document-text" size={20} color="#0EA5E9" />
         </View>
         <View>
           <Text className="text-slate-400 text-xs font-bold uppercase">Mes</Text>
@@ -139,7 +139,7 @@ export default function PatientOrdonnance() {
 
       {loading ? (
         <View className="flex-1 justify-center items-center">
-          <ActivityIndicator color="#4F46E5" size="large" />
+          <ActivityIndicator color="#0EA5E9" size="large" />
         </View>
       ) : (
         <FlatList

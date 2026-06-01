@@ -25,7 +25,7 @@ export default function RegisterInfoScreen() {
             <View style={styles.rowContent}>
               <Text style={styles.rowTitle}>Vous êtes médecin ?</Text>
               <Text style={styles.rowText}>
-                Les comptes médecins sont créés par un administrateur du réseau Salama.
+                Les comptes médecins sont créés par un administrateur du réseau Mediora.
                 Contactez votre administrateur pour obtenir vos identifiants.
               </Text>
             </View>

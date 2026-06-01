@@ -162,7 +162,7 @@ export default function DetailPrescription() {
   if (loading) {
     return (
       <View className="flex-1 justify-center items-center bg-white">
-        <ActivityIndicator size="large" color="#4F46E5" />
+        <ActivityIndicator size="large" color="#0EA5E9" />
       </View>
     );
   }
@@ -172,7 +172,7 @@ export default function DetailPrescription() {
       <SafeAreaView className="flex-1 bg-slate-50 justify-center items-center px-10">
         <Ionicons name="alert-circle-outline" size={60} color="#94A3B8" />
         <Text className="text-slate-500 text-center mt-4">Prescription introuvable</Text>
-        <TouchableOpacity onPress={() => router.back()} className="mt-6 bg-indigo-600 px-6 py-3 rounded-2xl">
+        <TouchableOpacity onPress={() => router.back()} className="mt-6 bg-sky-600 px-6 py-3 rounded-2xl">
           <Text className="text-white font-bold">Retour</Text>
         </TouchableOpacity>
       </SafeAreaView>
@@ -203,7 +203,7 @@ export default function DetailPrescription() {
         {/* --- DIAGNOSTIC --- */}
         <View className="bg-white rounded-[28px] p-6 border border-slate-100 shadow-sm mb-4">
           <View className="flex-row items-center mb-3">
-            <Ionicons name="medkit" size={18} color="#4F46E5" />
+            <Ionicons name="medkit" size={18} color="#0EA5E9" />
             <Text className="text-[10px] text-slate-400 font-bold uppercase tracking-widest ml-2">Diagnostic</Text>
           </View>
           <Text className="text-slate-900 text-base leading-6">{prescription.diagnostic || 'Non renseigné'}</Text>
@@ -213,7 +213,7 @@ export default function DetailPrescription() {
         {prescription.observations ? (
           <View className="bg-white rounded-[28px] p-6 border border-slate-100 shadow-sm mb-4">
             <View className="flex-row items-center mb-3">
-              <Ionicons name="chatbubble-ellipses" size={18} color="#4F46E5" />
+              <Ionicons name="chatbubble-ellipses" size={18} color="#0EA5E9" />
               <Text className="text-[10px] text-slate-400 font-bold uppercase tracking-widest ml-2">Observations</Text>
             </View>
             <Text className="text-slate-700 text-sm leading-6">{prescription.observations}</Text>
@@ -223,7 +223,7 @@ export default function DetailPrescription() {
         {/* --- DATES --- */}
         <View className="bg-white rounded-[28px] p-6 border border-slate-100 shadow-sm mb-4">
           <View className="flex-row items-center mb-4">
-            <Ionicons name="calendar" size={18} color="#4F46E5" />
+            <Ionicons name="calendar" size={18} color="#0EA5E9" />
             <Text className="text-[10px] text-slate-400 font-bold uppercase tracking-widest ml-2">Dates</Text>
           </View>
           <View className="gap-3">
@@ -237,7 +237,7 @@ export default function DetailPrescription() {
         {/* --- MÉDICAMENTS --- */}
         <View className="mb-4">
           <View className="flex-row items-center mb-3 px-2">
-            <Ionicons name="medical" size={18} color="#4F46E5" />
+            <Ionicons name="medical" size={18} color="#0EA5E9" />
             <Text className="text-[10px] text-slate-400 font-bold uppercase tracking-widest ml-2">
               Médicaments ({prescription.medicaments?.length || 0})
             </Text>
@@ -248,15 +248,15 @@ export default function DetailPrescription() {
             return (
               <View key={i} className="bg-white rounded-[28px] p-6 border border-slate-100 shadow-sm mb-3">
                 <Text className="text-slate-900 font-black text-lg mb-1">{med.nomMedicament}</Text>
-                <Text className="text-indigo-600 font-bold text-sm mb-4">{med.dosage}</Text>
+                <Text className="text-sky-600 font-bold text-sm mb-4">{med.dosage}</Text>
 
                 {/* Fréquence Matin / Midi / Soir */}
                 {moments.length > 0 ? (
                   <View className="flex-row gap-2 mb-3">
                     {moments.map((m, j) => (
-                      <View key={j} className={`flex-1 rounded-2xl p-3 items-center border ${m.qty > 0 ? 'bg-indigo-50 border-indigo-200' : 'bg-slate-50 border-slate-100'}`}>
-                        <Text className={`text-[10px] font-bold uppercase ${m.qty > 0 ? 'text-indigo-600' : 'text-slate-300'}`}>{m.label}</Text>
-                        <Text className={`text-2xl font-black mt-1 ${m.qty > 0 ? 'text-indigo-900' : 'text-slate-300'}`}>{m.qty}</Text>
+                      <View key={j} className={`flex-1 rounded-2xl p-3 items-center border ${m.qty > 0 ? 'bg-sky-50 border-sky-200' : 'bg-slate-50 border-slate-100'}`}>
+                        <Text className={`text-[10px] font-bold uppercase ${m.qty > 0 ? 'text-sky-600' : 'text-slate-300'}`}>{m.label}</Text>
+                        <Text className={`text-2xl font-black mt-1 ${m.qty > 0 ? 'text-sky-900' : 'text-slate-300'}`}>{m.qty}</Text>
                       </View>
                     ))}
                   </View>
@@ -284,9 +284,9 @@ export default function DetailPrescription() {
 
         {/* --- PARAMÈTRES HORAIRES (visible seulement si la prescription peut être démarrée) --- */}
         {canStart && (
-          <View className="bg-white rounded-[28px] p-6 border border-indigo-200 shadow-sm mb-4">
+          <View className="bg-white rounded-[28px] p-6 border border-sky-200 shadow-sm mb-4">
             <View className="flex-row items-center mb-2">
-              <Ionicons name="alarm" size={20} color="#4F46E5" />
+              <Ionicons name="alarm" size={20} color="#0EA5E9" />
               <Text className="text-lg font-black text-slate-900 ml-3">Horaires de rappel</Text>
             </View>
             <Text className="text-slate-400 text-sm mb-5">
@@ -297,12 +297,12 @@ export default function DetailPrescription() {
               value={horaires.matin} onChange={(v: string) => setHoraires({ ...horaires, matin: v })} />
             <HoraireInput label="Midi" icon="partly-sunny" color="#F97316" bgColor="bg-orange-50" borderColor="border-orange-200"
               value={horaires.midi} onChange={(v: string) => setHoraires({ ...horaires, midi: v })} />
-            <HoraireInput label="Soir" icon="moon" color="#6366F1" bgColor="bg-indigo-50" borderColor="border-indigo-200"
+            <HoraireInput label="Soir" icon="moon" color="#6366F1" bgColor="bg-sky-50" borderColor="border-sky-200"
               value={horaires.soir} onChange={(v: string) => setHoraires({ ...horaires, soir: v })} />
 
             <TouchableOpacity onPress={handleSaveHoraires} disabled={savingHoraires}
               className="bg-slate-100 rounded-2xl py-3 items-center mt-2">
-              {savingHoraires ? <ActivityIndicator color="#4F46E5" /> : (
+              {savingHoraires ? <ActivityIndicator color="#0EA5E9" /> : (
                 <Text className="text-slate-600 font-bold text-sm">Sauvegarder les horaires</Text>
               )}
             </TouchableOpacity>
@@ -311,10 +311,10 @@ export default function DetailPrescription() {
 
         {/* --- HORAIRES ACTUELS (si en cours) --- */}
         {prescription.statut === 'en_cours' && (
-          <View className="bg-indigo-50 rounded-[28px] p-6 border border-indigo-100 mb-4">
+          <View className="bg-sky-50 rounded-[28px] p-6 border border-sky-100 mb-4">
             <View className="flex-row items-center mb-3">
-              <Ionicons name="alarm" size={18} color="#4F46E5" />
-              <Text className="text-[10px] text-indigo-400 font-bold uppercase tracking-widest ml-2">Vos horaires de rappel</Text>
+              <Ionicons name="alarm" size={18} color="#0EA5E9" />
+              <Text className="text-[10px] text-sky-400 font-bold uppercase tracking-widest ml-2">Vos horaires de rappel</Text>
             </View>
             <View className="flex-row gap-3">
               <HoraireBadge label="Matin" heure={horaires.matin} icon="sunny" color="#F59E0B" />
@@ -327,7 +327,7 @@ export default function DetailPrescription() {
         {/* --- BOUTON DÉMARRER --- */}
         {canStart && (
           <TouchableOpacity
-            className="bg-indigo-600 rounded-2xl py-5 items-center shadow-lg shadow-indigo-200 mb-4"
+            className="bg-sky-600 rounded-2xl py-5 items-center shadow-lg shadow-sky-200 mb-4"
             onPress={() => setModalVisible(true)}
           >
             <View className="flex-row items-center">
@@ -343,8 +343,8 @@ export default function DetailPrescription() {
         <View className="flex-1 bg-black/50 justify-center items-center px-6">
           <View className="bg-white rounded-[30px] p-8 w-full max-w-sm">
             <View className="items-center mb-5">
-              <View className="bg-indigo-100 p-5 rounded-full">
-                <Ionicons name="medical" size={36} color="#4F46E5" />
+              <View className="bg-sky-100 p-5 rounded-full">
+                <Ionicons name="medical" size={36} color="#0EA5E9" />
               </View>
             </View>
 
@@ -372,7 +372,7 @@ export default function DetailPrescription() {
               </View>
             </View>
 
-            <TouchableOpacity className="bg-indigo-600 rounded-2xl py-4 items-center mb-3"
+            <TouchableOpacity className="bg-sky-600 rounded-2xl py-4 items-center mb-3"
               onPress={handleStartPrescription} disabled={starting}>
               {starting ? <ActivityIndicator color="white" /> : (
                 <Text className="text-white font-bold text-base">Oui, démarrer maintenant</Text>
@@ -419,7 +419,7 @@ function HoraireInput({ label, icon, color, bgColor, borderColor, value, onChang
 
 function HoraireBadge({ label, heure, icon, color }: any) {
   return (
-    <View className="flex-1 bg-white rounded-2xl p-3 items-center border border-indigo-100">
+    <View className="flex-1 bg-white rounded-2xl p-3 items-center border border-sky-100">
       <Ionicons name={icon} size={18} color={color} />
       <Text className="text-slate-900 font-black text-base mt-1">{heure}</Text>
       <Text className="text-slate-400 text-[10px] font-bold uppercase">{label}</Text>

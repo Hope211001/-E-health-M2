@@ -1,16 +1,17 @@
 import { Platform } from 'react-native';
 
 /**
- * Salama — Système de design centralisé
- * Inspiré du vocabulaire malgache (Salama = Santé).
+ * Mediora — Système de design centralisé
+ * Mediora = médicament + « ora » (heure, en malgache) :
+ * le bon médicament, à la bonne heure.
  *
  * Toute couleur utilisée dans l'app DOIT venir d'ici. Ne hardcode pas
  * de valeurs hex dans les écrans.
  */
 
 export const APP = {
-  name: 'Salama',
-  tagline: 'Votre santé, en confiance',
+  name: 'Mediora',
+  tagline: 'Le bon médicament, à la bonne heure',
   description:
     "Plateforme médicale connectée pour les médecins et leurs patients à Madagascar.",
 } as const;

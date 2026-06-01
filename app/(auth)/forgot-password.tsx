@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet,
 } from 'react-native';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
+import { AppScrollView } from '@/components/AppScrollView';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -50,7 +50,7 @@ export default function ForgotPasswordScreen() {
   };
 
   return (
-    <KeyboardAwareScrollView
+    <AppScrollView
       style={styles.container}
       contentContainerStyle={styles.contentContainer}
       keyboardShouldPersistTaps="handled"
@@ -130,7 +130,7 @@ export default function ForgotPasswordScreen() {
           </>
         )}
       </View>
-    </KeyboardAwareScrollView>
+    </AppScrollView>
   );
 }
 

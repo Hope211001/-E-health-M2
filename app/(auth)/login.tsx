@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet,
+  KeyboardAvoidingView, Platform, ScrollView,
 } from 'react-native';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -65,12 +65,15 @@ export default function LoginScreen() {
   };
 
   return (
-    <KeyboardAwareScrollView
+    <KeyboardAvoidingView
       style={styles.container}
-      contentContainerStyle={styles.contentContainer}
-      keyboardShouldPersistTaps="handled"
-      bottomOffset={20}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
+      <ScrollView
+        contentContainerStyle={styles.contentContainer}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
       <View style={styles.logoWrap}>
         <View style={styles.logoCircle}>
           <Ionicons name="heart" size={32} color="white" />
@@ -81,25 +84,43 @@ export default function LoginScreen() {
 
       <View style={styles.card}>
         <Text style={styles.label}>Email</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="email@exemple.com"
-          placeholderTextColor={Colors.textMuted}
-          value={email}
-          onChangeText={setEmail}
-          autoCapitalize="none"
-          keyboardType="email-address"
-        />
+        <View style={styles.inputWrap}>
+          <Ionicons
+            name="mail-outline"
+            size={20}
+            color={Colors.textMuted}
+            style={styles.inputIcon}
+          />
+          <TextInput
+            style={styles.inputFlex}
+            placeholder="email@exemple.com"
+            placeholderTextColor={Colors.textMuted}
+            value={email}
+            onChangeText={setEmail}
+            autoCapitalize="none"
+            keyboardType="email-address"
+            cursorColor={Colors.primary}
+            selectionColor={Colors.primary}
+          />
+        </View>
 
         <Text style={styles.label}>Mot de passe</Text>
-        <View style={styles.passwordWrap}>
+        <View style={styles.inputWrap}>
+          <Ionicons
+            name="lock-closed-outline"
+            size={20}
+            color={Colors.textMuted}
+            style={styles.inputIcon}
+          />
           <TextInput
-            style={styles.passwordInput}
+            style={styles.inputFlex}
             placeholder="••••••••"
             placeholderTextColor={Colors.textMuted}
             value={password}
             onChangeText={setPassword}
             secureTextEntry={!showPassword}
+            cursorColor={Colors.primary}
+            selectionColor={Colors.primary}
           />
           <TouchableOpacity
             style={styles.eyeBtn}
@@ -142,7 +163,8 @@ export default function LoginScreen() {
       <Text style={styles.note}>
         Comptes créés par votre administrateur ou votre médecin traitant.
       </Text>
-    </KeyboardAwareScrollView>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -195,26 +217,24 @@ const styles = StyleSheet.create({
     marginLeft: 4,
     fontSize: 14,
   },
-  input: {
+  inputWrap: {
     backgroundColor: Colors.surfaceAlt,
-    padding: 14,
     borderRadius: Radius.md,
     marginBottom: Spacing.md,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    color: Colors.textPrimary,
-    fontSize: 15,
-  },
-  passwordWrap: {
-    backgroundColor: Colors.surfaceAlt,
-    borderRadius: Radius.md,
-    marginBottom: 6,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: Colors.border,
     flexDirection: 'row',
     alignItems: 'center',
   },
-  passwordInput: {
+  inputWrapFocused: {
+    borderColor: Colors.primary,
+    backgroundColor: Colors.surface,
+    ...Shadows.sm,
+  },
+  inputIcon: {
+    paddingLeft: 14,
+  },
+  inputFlex: {
     flex: 1,
     padding: 14,
     color: Colors.textPrimary,

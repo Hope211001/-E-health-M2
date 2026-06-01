@@ -88,7 +88,7 @@ export default function Parametres() {
   if (loading) {
     return (
       <View className="flex-1 justify-center items-center bg-white">
-        <ActivityIndicator size="large" color="#4F46E5" />
+        <ActivityIndicator size="large" color="#0EA5E9" />
       </View>
     );
   }
@@ -97,8 +97,8 @@ export default function Parametres() {
     <SafeAreaView className="flex-1 bg-slate-50">
       {/* Header */}
       <View className="bg-white px-6 py-5 flex-row items-center border-b border-slate-100">
-        <View className="bg-indigo-50 p-3 rounded-2xl mr-4">
-          <Ionicons name="settings" size={20} color="#4F46E5" />
+        <View className="bg-sky-50 p-3 rounded-2xl mr-4">
+          <Ionicons name="settings" size={20} color="#0EA5E9" />
         </View>
         <View>
           <Text className="text-slate-400 text-xs font-bold uppercase">Mes</Text>
@@ -126,7 +126,7 @@ export default function Parametres() {
         {/* Section Horaires par défaut */}
         <View className="bg-white rounded-[30px] p-6 border border-slate-100 shadow-sm mb-6">
           <View className="flex-row items-center mb-2">
-            <Ionicons name="alarm" size={22} color="#4F46E5" />
+            <Ionicons name="alarm" size={22} color="#0EA5E9" />
             <Text className="text-lg font-black text-slate-900 ml-3">Horaires par défaut</Text>
           </View>
           <Text className="text-slate-400 text-sm mb-6">
@@ -144,12 +144,12 @@ export default function Parametres() {
             onChange={(v: string) => setHoraires({ ...horaires, midi: v })} />
 
           <HoraireInput label="Soir" icon="moon" color="#6366F1"
-            bgColor="bg-indigo-50" borderColor="border-indigo-200"
+            bgColor="bg-sky-50" borderColor="border-sky-200"
             value={horaires.soir}
             onChange={(v: string) => setHoraires({ ...horaires, soir: v })} />
 
           <TouchableOpacity
-            className="bg-indigo-600 rounded-2xl py-4 items-center mt-4"
+            className="bg-sky-600 rounded-2xl py-4 items-center mt-4"
             onPress={handleSave}
             disabled={saving}
           >
@@ -165,7 +165,7 @@ export default function Parametres() {
         {/* Section Mes ordonnances en cours / en attente */}
         <View className="bg-white rounded-[30px] p-6 border border-slate-100 shadow-sm mb-6">
           <View className="flex-row items-center mb-3">
-            <Ionicons name="document-text" size={22} color="#4F46E5" />
+            <Ionicons name="document-text" size={22} color="#0EA5E9" />
             <Text className="text-lg font-black text-slate-900 ml-3">Mes ordonnances</Text>
           </View>
           <Text className="text-slate-400 text-sm mb-4">

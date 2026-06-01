@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
+import { AppScrollView } from '@/components/AppScrollView';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -110,7 +110,7 @@ export default function AjoutOrdonnance() {
 
   return (
     <SafeAreaView className="flex-1 bg-slate-50">
-      <KeyboardAwareScrollView
+      <AppScrollView
         className="flex-1"
         contentContainerStyle={{ padding: 24 }}
         keyboardShouldPersistTaps="handled"
@@ -138,7 +138,7 @@ export default function AjoutOrdonnance() {
                   if (selectedPatient) setSelectedPatient(null);
                 }}
               />
-              {isSearching && <ActivityIndicator size="small" color="#7C3AED" />}
+              {isSearching && <ActivityIndicator size="small" color="#059669" />}
             </View>
 
             {/* Dropdown Résultats */}
@@ -150,7 +150,7 @@ export default function AjoutOrdonnance() {
                     className="p-4 border-b border-slate-50 flex-row items-center"
                     onPress={() => { setSelectedPatient(p); setSearchQuery(p.numeroPatient); setResults([]); }}
                   >
-                    <Ionicons name="person-circle" size={20} color="#7C3AED" />
+                    <Ionicons name="person-circle" size={20} color="#059669" />
                     <Text className="ml-3 text-slate-700 font-medium">{p.numeroPatient} - {p.email}</Text>
                   </TouchableOpacity>
                 ))}
@@ -180,7 +180,7 @@ export default function AjoutOrdonnance() {
           {/* MÉDICAMENTS */}
           <View className="flex-row justify-between items-center mb-4 px-2">
               <Text className="text-lg font-black text-slate-900">Traitements</Text>
-              <TouchableOpacity onPress={addMed} className="bg-purple-600 px-4 py-2 rounded-xl">
+              <TouchableOpacity onPress={addMed} className="bg-emerald-600 px-4 py-2 rounded-xl">
                   <Text className="text-white font-bold">+ Ajouter</Text>
               </TouchableOpacity>
           </View>
@@ -188,7 +188,7 @@ export default function AjoutOrdonnance() {
           {medicaments.map((med, index) => (
             <View key={index} className="bg-white p-5 rounded-[32px] mb-4 border border-slate-100 shadow-sm">
               <View className="flex-row justify-between items-center mb-4">
-                  <Text className="text-purple-600 font-black">MÉDICAMENT #{index + 1}</Text>
+                  <Text className="text-emerald-600 font-black">MÉDICAMENT #{index + 1}</Text>
                   {medicaments.length > 1 && (
                       <TouchableOpacity onPress={() => removeMed(index)} className="bg-red-50 p-2 rounded-lg">
                           <Ionicons name="trash" size={18} color="#EF4444" />
@@ -259,7 +259,7 @@ export default function AjoutOrdonnance() {
           ))}
 
           <TouchableOpacity 
-            className={`bg-purple-600 p-5 rounded-2xl items-center shadow-xl shadow-purple-200 mb-10 ${loading ? 'opacity-50' : ''}`}
+            className={`bg-emerald-600 p-5 rounded-2xl items-center shadow-xl shadow-emerald-200 mb-10 ${loading ? 'opacity-50' : ''}`}
             onPress={handleSave}
             disabled={loading}
           >
@@ -270,7 +270,7 @@ export default function AjoutOrdonnance() {
               </View>
             )}
           </TouchableOpacity>
-      </KeyboardAwareScrollView>
+      </AppScrollView>
     </SafeAreaView>
   );
 }

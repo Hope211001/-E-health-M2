@@ -54,7 +54,7 @@ export default function DetailPrescription() {
 
   if (loading) return (
     <View className="flex-1 justify-center items-center bg-slate-50">
-      <ActivityIndicator size="large" color="#7C3AED" />
+      <ActivityIndicator size="large" color="#059669" />
     </View>
   );
 
@@ -63,7 +63,7 @@ export default function DetailPrescription() {
   if (!ord) return (
     <SafeAreaView className="flex-1 bg-slate-50 justify-center items-center">
       <Text>Ordonnance introuvable ou erreur de connexion.</Text>
-      <TouchableOpacity onPress={() => router.back()} className="mt-4 bg-purple-600 p-3 rounded-xl">
+      <TouchableOpacity onPress={() => router.back()} className="mt-4 bg-emerald-600 p-3 rounded-xl">
         <Text className="text-white">Retour</Text>
       </TouchableOpacity>
     </SafeAreaView>
@@ -95,8 +95,8 @@ export default function DetailPrescription() {
         {/* Section Diagnostic */}
         <View className="bg-white p-6 rounded-[32px] shadow-sm border border-slate-100 mb-8">
           <View className="flex-row items-center mb-4">
-            <View className="bg-purple-100 p-2 rounded-lg">
-              <Ionicons name="pulse" size={18} color="#7C3AED" />
+            <View className="bg-emerald-100 p-2 rounded-lg">
+              <Ionicons name="pulse" size={18} color="#059669" />
             </View>
             <Text className="ml-3 font-bold text-slate-900 text-base">Diagnostic</Text>
           </View>
@@ -110,8 +110,8 @@ export default function DetailPrescription() {
 
         {ord.medicaments?.map((med: any, index: number) => (
           <View key={index} className="bg-white p-5 rounded-3xl mb-4 border border-slate-100 flex-row items-center shadow-sm">
-            <View className="w-12 h-12 bg-purple-50 rounded-2xl items-center justify-center mr-4">
-              <Ionicons name="medical" size={24} color="#7C3AED" />
+            <View className="w-12 h-12 bg-emerald-50 rounded-2xl items-center justify-center mr-4">
+              <Ionicons name="medical" size={24} color="#059669" />
             </View>
             <View className="flex-1">
               <Text className="text-slate-900 font-black text-base mb-2">{med.nomMedicament}</Text>

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
+import { AppScrollView } from '@/components/AppScrollView';
 import { useRouter } from 'expo-router';
 import Toast from 'react-native-toast-message';
 import { z } from 'zod';
@@ -82,19 +82,19 @@ export default function AddPatient() {
   };
 
   return (
-    <KeyboardAwareScrollView
-      className="flex-1 bg-sky-50"
+    <AppScrollView
+      className="flex-1 bg-emerald-50"
       contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: 24 }}
       keyboardShouldPersistTaps="handled"
       bottomOffset={20}
     >
 
         <View className="items-center mb-8">
-          <Text className="text-3xl font-black text-sky-700">Nouveau Patient</Text>
+          <Text className="text-3xl font-black text-emerald-700">Nouveau Patient</Text>
           <Text className="text-slate-500 mt-2 text-center">Enregistrez un patient pour commencer son suivi médical</Text>
         </View>
 
-        <View className="bg-white p-6 rounded-[32px] shadow-xl shadow-sky-100 border border-white">
+        <View className="bg-white p-6 rounded-[32px] shadow-xl shadow-emerald-100 border border-white">
           <Text className="text-slate-700 font-bold mb-2 ml-1">Adresse Email</Text>
           <TextInput
             className="bg-slate-50 p-4 rounded-2xl mb-4 border border-slate-100"
@@ -134,7 +134,7 @@ export default function AddPatient() {
           />
 
           <TouchableOpacity
-            className="bg-sky-600 p-5 rounded-2xl items-center shadow-lg shadow-sky-200"
+            className="bg-emerald-600 p-5 rounded-2xl items-center shadow-lg shadow-emerald-200"
             onPress={handleRegister}
             disabled={loading}
           >
@@ -150,6 +150,6 @@ export default function AddPatient() {
           <Text className="text-slate-400 font-medium">Annuler l'enregistrement</Text>
         </TouchableOpacity>
 
-    </KeyboardAwareScrollView>
+    </AppScrollView>
   );
 }

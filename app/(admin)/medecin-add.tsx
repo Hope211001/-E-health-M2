@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet,
 } from 'react-native';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
+import { AppScrollView } from '@/components/AppScrollView';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -13,11 +13,14 @@ import { PasswordInput } from '../../components/PasswordInput';
 import { Colors, Radius, Shadows, Spacing } from '@/constants/theme';
 
 const schema = z.object({
-  email: z.string().email("Email invalide"),
-  password: z.string().min(8, "8 caractères minimum"),
-  tel: z.string().min(8, "Téléphone invalide"),
-  ordre: z.string().min(1, "Numéro d'ordre requis"),
-  specialite: z.string().min(2, "Spécialité requise"),
+  email: z.string().email("Email : format invalide"),
+  password: z.string().min(8, "Mot de passe : 8 caractères minimum"),
+  tel: z.string().refine(
+    (v) => /^0\d{9}$/.test(v.replace(/\s/g, '')),
+    "Téléphone : 10 chiffres commençant par 0 (ex: 0341234567)",
+  ),
+  ordre: z.string().min(1, "Numéro d'ordre : requis"),
+  specialite: z.string().min(2, "Spécialité : requise (2 caractères min)"),
 });
 
 export default function MedecinAddScreen() {
@@ -61,7 +64,7 @@ export default function MedecinAddScreen() {
   };
 
   return (
-    <KeyboardAwareScrollView
+    <AppScrollView
       style={styles.container}
       contentContainerStyle={styles.scroll}
       keyboardShouldPersistTaps="handled"
@@ -79,13 +82,20 @@ export default function MedecinAddScreen() {
 
           <Text style={styles.label}>Mot de passe</Text>
           <PasswordInput
-            containerClassName=""
             placeholder="••••••••"
             value={form.password}
             onChangeText={update('password')}
           />
+          <Text style={styles.hint}>8 caractères minimum</Text>
 
-          <Field label="Téléphone" value={form.tel} onChangeText={update('tel')} keyboardType="phone-pad" />
+          <Field
+            label="Téléphone"
+            hint="10 chiffres commençant par 0 (ex: 0341234567)"
+            value={form.tel}
+            onChangeText={update('tel')}
+            keyboardType="phone-pad"
+            placeholder="0341234567"
+          />
           <Field label="Numéro d'ordre" value={form.ordre} onChangeText={update('ordre')} />
           <Field
             label="Spécialités"
@@ -116,7 +126,7 @@ export default function MedecinAddScreen() {
             <Text style={styles.cancelTxt}>Annuler</Text>
           </TouchableOpacity>
         </View>
-    </KeyboardAwareScrollView>
+    </AppScrollView>
   );
 }
 

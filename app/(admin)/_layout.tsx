@@ -57,8 +57,19 @@ export default function AdminLayout() {
         }}
       />
 
+      <Tabs.Screen
+        name="pharmacie-garde"
+        options={{
+          title: 'Pharmacies',
+          tabBarIcon: ({ color }) => <Ionicons name="medical" size={22} color={color} />,
+          href: isSuperadmin ? undefined : null,
+        }}
+      />
+
       <Tabs.Screen name="medecin-add" options={{ href: null }} />
       <Tabs.Screen name="admin-add" options={{ href: null }} />
+      <Tabs.Screen name="pharmacie-garde-form" options={{ href: null }} />
+      <Tabs.Screen name="pharmacie-garde-detail" options={{ href: null }} />
     </Tabs>
   );
 }

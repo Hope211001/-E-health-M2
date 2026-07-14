@@ -52,6 +52,12 @@
           "color": "#059669",
           "defaultChannel": "rappels-medicaments"
         }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Mediora utilise votre position pour centrer la carte sur les pharmacies proches de vous."
+        }
       ]
     ],
     "experiments": {

@@ -64,6 +64,16 @@ export interface Prescription {
     medicaments: Medicament[];
     creePar: string;
 }
+export interface PharmacieGarde {
+    id: string;
+    idpost: string;
+    isVisible: boolean;
+    urlPost: string;
+    textPost: string;
+    attachement: string[];
+    dateCreation?: Timestamp | null;
+    dateModification?: Timestamp | null;
+}
 export interface Alerte {
     id?: string;
     patientId: string;

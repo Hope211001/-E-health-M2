@@ -178,6 +178,23 @@ export default function PatientDashboard() {
           </View>
         </View>
 
+        {/* --- PHARMACIES DE GARDE --- */}
+        <View className="px-6 mb-8">
+          <TouchableOpacity
+            onPress={() => router.push(APP_ROUTES.PATIENT.PHARMACIES_GARDE as Href)}
+            className="bg-emerald-50 p-5 rounded-[30px] flex-row items-center border border-emerald-100"
+          >
+            <View className="bg-emerald-600 p-3 rounded-xl mr-4">
+              <Ionicons name="medical" size={22} color="white" />
+            </View>
+            <View className="flex-1">
+              <Text className="text-slate-900 font-black text-base">Pharmacies de garde</Text>
+              <Text className="text-slate-400 text-[10px] font-bold uppercase mt-0.5">Trouvez une pharmacie ouverte</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#34D399" />
+          </TouchableOpacity>
+        </View>
+
         {/* --- MESSAGES --- */}
         <View className="px-6 mb-8">
           <TouchableOpacity

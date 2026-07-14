@@ -50,14 +50,22 @@ export default function PatientLayout() {
         }}
       />
       <Tabs.Screen
+        name="pharmacies"
+        options={{
+          title: 'Garde',
+          tabBarIcon: ({ color }) => <Ionicons name="medical" size={22} color={color} />,
+        }}
+      />
+      <Tabs.Screen
         name="parametres"
         options={{
           title: 'Paramètres',
           tabBarIcon: ({ color }) => <Ionicons name="settings" size={22} color={color} />,
         }}
       />
-      {/* Écran caché du tab bar */}
+      {/* Écrans cachés du tab bar */}
       <Tabs.Screen name="detail-prescription" options={{ href: null }} />
+      <Tabs.Screen name="pharmacies-map" options={{ href: null }} />
     </Tabs>
   );
 }

@@ -25,6 +25,8 @@ export const APP_ROUTES = {
     REGISTER: "/(patient)/register-patient",
     HOME: "/(patient)",
     MES_RAPPELS: "/(patient)/rappels",
+    PHARMACIES_GARDE: "/(patient)/pharmacies",
+    PHARMACIES_MAP: "/(patient)/pharmacies-map",
   },
   ADMIN: {
     HOME: "/(admin)",
@@ -33,5 +35,8 @@ export const APP_ROUTES = {
     ADMINS: "/(admin)/admins",
     ADMIN_ADD: "/(admin)/admin-add",
     PATIENTS: "/(admin)/patients",
+    PHARMACIE_GARDE: "/(admin)/pharmacie-garde",
+    PHARMACIE_GARDE_FORM: "/(admin)/pharmacie-garde-form",
+    PHARMACIE_GARDE_DETAIL: "/(admin)/pharmacie-garde-detail",
   },
 } as const;

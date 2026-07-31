@@ -31,11 +31,18 @@ export const Colors = {
   patientSoft: '#E0F2FE',
   patientBg: '#F0F9FF',
 
-  // Orange admin / superadmin (chaud, autorité)
-  admin: '#F97316',
-  adminDark: '#EA580C',
-  adminSoft: '#FFEDD5',
-  adminBg: '#FFF7ED',
+  // Vert admin / superadmin — même famille que le vert de marque (cohérence
+  // avec patient/médecin), avec un accent ambré complémentaire pour les CTA
+  // et les mises en avant (variété visuelle, façon bandeaux multicolores du
+  // dashboard patient).
+  admin: '#059669',
+  adminDark: '#047857',
+  adminSoft: '#D1FAE5',
+  adminBg: '#F0FDF4',
+  adminAccent: '#D97706',
+  adminAccentDark: '#B45309',
+  adminAccentSoft: '#FEF3C7',
+  adminAccentBg: '#FFFBEB',
 
   // Texte
   textPrimary: '#0F172A',

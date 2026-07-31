@@ -9,8 +9,11 @@ import { prescriptionService } from '../../api/prescriptionService';
 import {
   requestNotificationPermission,
   schedulePrescriptionNotifications,
+  cancelPrescriptionNotifications,
 } from '../../api/notificationLocal';
 import Toast from 'react-native-toast-message';
+import { imprimerOrdonnance, partagerOrdonnancePdf } from '@/utils/printOrdonnance';
+import { getMedecinLabel, getPatientLabel } from '@/utils/ordonnanceLabels';
 
 const DEFAUT_HORAIRES = { matin: '08:00', midi: '12:00', soir: '20:00' };
 
@@ -22,10 +25,14 @@ export default function DetailPrescription() {
   const [loading, setLoading] = useState(true);
   const [starting, setStarting] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
+  const [printing, setPrinting] = useState(false);
 
   // Horaires personnalisés du patient
   const [horaires, setHoraires] = useState(DEFAUT_HORAIRES);
   const [savingHoraires, setSavingHoraires] = useState(false);
+  // Une fois le traitement démarré, les horaires sont affichés en lecture seule
+  // et ne deviennent modifiables qu'après un appui sur « Modifier ».
+  const [editingHoraires, setEditingHoraires] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -67,6 +74,26 @@ export default function DetailPrescription() {
     return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
   };
 
+  /** Imprime l'ordonnance ou l'exporte en PDF (à présenter en pharmacie). */
+  const handleExport = async (mode: 'print' | 'share') => {
+    try {
+      setPrinting(true);
+      const [patientLabel, medecinLabel] = await Promise.all([
+        getPatientLabel(prescription.patientId || auth.currentUser?.uid),
+        getMedecinLabel(prescription.medecinId),
+      ]);
+      const document = { ...prescription, patientLabel, medecinLabel };
+      await (mode === 'print' ? imprimerOrdonnance(document) : partagerOrdonnancePdf(document));
+    } catch (error: any) {
+      // L'annulation du dialogue système lève aussi une erreur : on reste discret
+      if (!/cancel/i.test(error?.message || '')) {
+        Toast.show({ type: 'error', text1: 'Erreur', text2: 'Export impossible' });
+      }
+    } finally {
+      setPrinting(false);
+    }
+  };
+
   const isValidTime = (value: string) => /^([01]\d|2[0-3]):([0-5]\d)$/.test(value);
 
   const handleSaveHoraires = async () => {
@@ -80,6 +107,23 @@ export default function DetailPrescription() {
       // Sauvegarde des horaires propres à CETTE prescription (pas au profil patient)
       await prescriptionService.updatePrescriptionHoraires(prescription.id, horaires);
       setPrescription((p: any) => ({ ...p, horairesRappel: horaires }));
+
+      if (prescription.statut === 'en_cours') {
+        // Traitement déjà démarré : les rappels du téléphone ont été programmés
+        // avec les anciennes heures, il faut les annuler et les reprogrammer
+        // sur les jours restants (sans dépasser la date de fin d'origine).
+        await cancelPrescriptionNotifications(prescription.id);
+        const finDate = prescription.dateFin?.toDate ? prescription.dateFin.toDate() : new Date(prescription.dateFin);
+        const joursRestants = Math.max(1, Math.ceil((finDate.getTime() - Date.now()) / 86400000));
+        await schedulePrescriptionNotifications({
+          prescriptionId: prescription.id,
+          medicaments: prescription.medicaments || [],
+          horaires,
+          dureeDefaut: joursRestants,
+        });
+      }
+
+      setEditingHoraires(false);
       Toast.show({ type: 'success', text1: 'Horaires sauvegardés pour cette ordonnance' });
     } catch (e) {
       Toast.show({ type: 'error', text1: 'Erreur', text2: 'Impossible de sauvegarder' });
@@ -282,45 +326,63 @@ export default function DetailPrescription() {
           })}
         </View>
 
-        {/* --- PARAMÈTRES HORAIRES (visible seulement si la prescription peut être démarrée) --- */}
-        {canStart && (
+        {/* --- PARAMÈTRES HORAIRES (avant démarrage : configuration initiale, toujours modifiable) --- */}
+        {(canStart || prescription.statut === 'en_cours') && (
           <View className="bg-white rounded-[28px] p-6 border border-sky-200 shadow-sm mb-4">
-            <View className="flex-row items-center mb-2">
-              <Ionicons name="alarm" size={20} color="#0EA5E9" />
-              <Text className="text-lg font-black text-slate-900 ml-3">Horaires de rappel</Text>
-            </View>
-            <Text className="text-slate-400 text-sm mb-5">
-              Configurez vos heures de prise avant de démarrer le traitement.
-            </Text>
-
-            <HoraireInput label="Matin" icon="sunny" color="#F59E0B" bgColor="bg-amber-50" borderColor="border-amber-200"
-              value={horaires.matin} onChange={(v: string) => setHoraires({ ...horaires, matin: v })} />
-            <HoraireInput label="Midi" icon="partly-sunny" color="#F97316" bgColor="bg-orange-50" borderColor="border-orange-200"
-              value={horaires.midi} onChange={(v: string) => setHoraires({ ...horaires, midi: v })} />
-            <HoraireInput label="Soir" icon="moon" color="#6366F1" bgColor="bg-sky-50" borderColor="border-sky-200"
-              value={horaires.soir} onChange={(v: string) => setHoraires({ ...horaires, soir: v })} />
-
-            <TouchableOpacity onPress={handleSaveHoraires} disabled={savingHoraires}
-              className="bg-slate-100 rounded-2xl py-3 items-center mt-2">
-              {savingHoraires ? <ActivityIndicator color="#0EA5E9" /> : (
-                <Text className="text-slate-600 font-bold text-sm">Sauvegarder les horaires</Text>
+            <View className="flex-row items-center justify-between mb-2">
+              <View className="flex-row items-center">
+                <Ionicons name="alarm" size={20} color="#0EA5E9" />
+                <Text className="text-lg font-black text-slate-900 ml-3">Horaires de rappel</Text>
+              </View>
+              {!canStart && !editingHoraires && (
+                <TouchableOpacity onPress={() => setEditingHoraires(true)} className="bg-sky-50 rounded-xl px-3 py-2 flex-row items-center">
+                  <Ionicons name="create-outline" size={14} color="#0EA5E9" />
+                  <Text className="text-sky-600 font-bold text-xs ml-1">Modifier</Text>
+                </TouchableOpacity>
               )}
-            </TouchableOpacity>
-          </View>
-        )}
+            </View>
 
-        {/* --- HORAIRES ACTUELS (si en cours) --- */}
-        {prescription.statut === 'en_cours' && (
-          <View className="bg-sky-50 rounded-[28px] p-6 border border-sky-100 mb-4">
-            <View className="flex-row items-center mb-3">
-              <Ionicons name="alarm" size={18} color="#0EA5E9" />
-              <Text className="text-[10px] text-sky-400 font-bold uppercase tracking-widest ml-2">Vos horaires de rappel</Text>
-            </View>
-            <View className="flex-row gap-3">
-              <HoraireBadge label="Matin" heure={horaires.matin} icon="sunny" color="#F59E0B" />
-              <HoraireBadge label="Midi" heure={horaires.midi} icon="partly-sunny" color="#F97316" />
-              <HoraireBadge label="Soir" heure={horaires.soir} icon="moon" color="#6366F1" />
-            </View>
+            {/* En cours + pas en édition : affichage lecture seule */}
+            {!canStart && !editingHoraires ? (
+              <View className="flex-row gap-3 mt-3">
+                <HoraireBadge label="Matin" heure={horaires.matin} icon="sunny" color="#F59E0B" />
+                <HoraireBadge label="Midi" heure={horaires.midi} icon="partly-sunny" color="#F97316" />
+                <HoraireBadge label="Soir" heure={horaires.soir} icon="moon" color="#6366F1" />
+              </View>
+            ) : (
+              <>
+                <Text className="text-slate-400 text-sm mb-5">
+                  {canStart
+                    ? "Configurez vos heures de prise avant de démarrer le traitement."
+                    : "Les rappels restants sont automatiquement reprogrammés après la sauvegarde."}
+                </Text>
+
+                <HoraireInput label="Matin" icon="sunny" color="#F59E0B" bgColor="bg-amber-50" borderColor="border-amber-200"
+                  value={horaires.matin} onChange={(v: string) => setHoraires({ ...horaires, matin: v })} />
+                <HoraireInput label="Midi" icon="partly-sunny" color="#F97316" bgColor="bg-orange-50" borderColor="border-orange-200"
+                  value={horaires.midi} onChange={(v: string) => setHoraires({ ...horaires, midi: v })} />
+                <HoraireInput label="Soir" icon="moon" color="#6366F1" bgColor="bg-sky-50" borderColor="border-sky-200"
+                  value={horaires.soir} onChange={(v: string) => setHoraires({ ...horaires, soir: v })} />
+
+                <View className="flex-row gap-3 mt-2">
+                  {!canStart && (
+                    <TouchableOpacity onPress={() => setEditingHoraires(false)} disabled={savingHoraires}
+                      className="bg-slate-100 rounded-2xl py-4 px-6 items-center justify-center">
+                      <Text className="text-slate-500 font-bold text-sm">Annuler</Text>
+                    </TouchableOpacity>
+                  )}
+                  <TouchableOpacity onPress={handleSaveHoraires} disabled={savingHoraires}
+                    className="flex-1 bg-sky-600 rounded-2xl py-4 items-center justify-center shadow-lg shadow-sky-200">
+                    {savingHoraires ? <ActivityIndicator color="white" /> : (
+                      <View className="flex-row items-center">
+                        <Ionicons name="checkmark-circle" size={18} color="white" />
+                        <Text className="text-white font-bold text-sm ml-2">Sauvegarder les horaires</Text>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
           </View>
         )}
 
@@ -336,6 +398,28 @@ export default function DetailPrescription() {
             </View>
           </TouchableOpacity>
         )}
+
+        {/* --- IMPRIMER / PARTAGER (ordonnance à présenter en pharmacie) --- */}
+        <View className="flex-row gap-3">
+          <TouchableOpacity
+            className="flex-1 flex-row items-center justify-center bg-white border border-slate-200 rounded-2xl py-4"
+            disabled={printing}
+            onPress={() => handleExport('print')}
+          >
+            {printing
+              ? <ActivityIndicator size="small" color="#0EA5E9" />
+              : <Ionicons name="print-outline" size={18} color="#0EA5E9" />}
+            <Text className="text-slate-700 font-bold text-sm ml-2">Imprimer</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            className="flex-1 flex-row items-center justify-center bg-white border border-slate-200 rounded-2xl py-4"
+            disabled={printing}
+            onPress={() => handleExport('share')}
+          >
+            <Ionicons name="share-outline" size={18} color="#0EA5E9" />
+            <Text className="text-slate-700 font-bold text-sm ml-2">Partager PDF</Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
 
       {/* --- MODAL CONFIRMATION --- */}

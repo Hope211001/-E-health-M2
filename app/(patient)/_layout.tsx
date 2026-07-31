@@ -1,71 +1,29 @@
-import { useEffect } from 'react';
-import { Tabs } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { requestNotificationPermission } from '../../api/notificationLocal';
-import { Colors } from '@/constants/theme';
+import { Drawer } from 'expo-router/drawer';
+import CustomDrawerContent, { DrawerMenuItem } from '../../components/CustomDrawerContent';
+import { APP_ROUTES } from '../../constants/routes';
+
+const PATIENT_MENU: DrawerMenuItem[] = [
+  { label: 'Accueil', icon: 'home', route: APP_ROUTES.PATIENT.HOME },
+  { label: 'Mes Ordonnances', icon: 'document-text', route: '/(patient)/(tabs)/ordonnance' },
+  { label: 'Rappels', icon: 'alarm', route: APP_ROUTES.PATIENT.MES_RAPPELS },
+  { label: 'Pharmacies de garde', icon: 'medical', route: APP_ROUTES.PATIENT.PHARMACIES_GARDE },
+  { label: 'Carte des pharmacies', icon: 'map', route: APP_ROUTES.PATIENT.PHARMACIES_MAP },
+  { label: 'Messages', icon: 'chatbubbles', route: '/(conversation)/list' },
+  { label: 'Notifications', icon: 'notifications', route: '/(notification)/list' },
+  { label: 'Paramètres', icon: 'settings', route: '/(patient)/(tabs)/parametres' },
+];
 
 export default function PatientLayout() {
-  const insets = useSafeAreaInsets();
-
-  useEffect(() => {
-    requestNotificationPermission().catch((e) =>
-      console.warn('Permission notifications refusée ou erreur:', e)
-    );
-  }, []);
-
   return (
-    <Tabs screenOptions={{
-      tabBarActiveTintColor: Colors.patient,
-      tabBarInactiveTintColor: Colors.textMuted,
-      tabBarStyle: {
-        backgroundColor: Colors.surface,
-        borderTopColor: Colors.border,
-        height: 64 + insets.bottom,
-        paddingBottom: 8 + insets.bottom,
-        paddingTop: 8,
-      },
-      tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
-      headerShown: false,
-    }}>
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Accueil',
-          tabBarIcon: ({ color }) => <Ionicons name="home" size={22} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="ordonnance"
-        options={{
-          title: 'Ordonnances',
-          tabBarIcon: ({ color }) => <Ionicons name="document-text" size={22} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="rappels"
-        options={{
-          title: 'Rappels',
-          tabBarIcon: ({ color }) => <Ionicons name="alarm" size={22} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="pharmacies"
-        options={{
-          title: 'Garde',
-          tabBarIcon: ({ color }) => <Ionicons name="medical" size={22} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="parametres"
-        options={{
-          title: 'Paramètres',
-          tabBarIcon: ({ color }) => <Ionicons name="settings" size={22} color={color} />,
-        }}
-      />
-      {/* Écrans cachés du tab bar */}
-      <Tabs.Screen name="detail-prescription" options={{ href: null }} />
-      <Tabs.Screen name="pharmacies-map" options={{ href: null }} />
-    </Tabs>
+    <Drawer
+      screenOptions={{ headerShown: false, drawerStyle: { width: '80%', maxWidth: 300 } }}
+      drawerContent={(props) => (
+        <CustomDrawerContent {...props} subtitle="Espace Patient" menuItems={PATIENT_MENU} />
+      )}
+    >
+      <Drawer.Screen name="(tabs)" options={{ title: 'Accueil', drawerItemStyle: { display: 'none' } }} />
+      <Drawer.Screen name="detail-prescription" options={{ drawerItemStyle: { display: 'none' } }} />
+      <Drawer.Screen name="pharmacies-map" options={{ drawerItemStyle: { display: 'none' } }} />
+    </Drawer>
   );
 }

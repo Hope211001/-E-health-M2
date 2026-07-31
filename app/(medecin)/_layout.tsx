@@ -1,61 +1,27 @@
-import { Tabs } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Colors } from '@/constants/theme';
+import { Drawer } from 'expo-router/drawer';
+import CustomDrawerContent, { DrawerMenuItem } from '../../components/CustomDrawerContent';
+import { APP_ROUTES } from '@/constants/routes';
+
+const MEDECIN_MENU: DrawerMenuItem[] = [
+  { label: 'Accueil', icon: 'home', route: APP_ROUTES.MEDECIN.HOME },
+  { label: 'Mes Patients', icon: 'people', route: APP_ROUTES.MEDECIN.PATIENT.LISTE },
+  { label: 'Ajouter un patient', icon: 'person-add', route: APP_ROUTES.MEDECIN.PATIENT.ADD },
+  { label: 'Nouvelle ordonnance', icon: 'medical', route: APP_ROUTES.MEDECIN.ORDONNANCE.ADD },
+  { label: 'Historique ordonnances', icon: 'document-text', route: APP_ROUTES.MEDECIN.ORDONNANCE.HISTORY },
+  { label: 'Messages', icon: 'chatbubbles', route: '/(conversation)/list' },
+  { label: 'Notifications', icon: 'notifications', route: '/(notification)/list' },
+  { label: 'Mon profil', icon: 'person', route: APP_ROUTES.MEDECIN.PARAMETRE.PROFIL },
+];
 
 export default function MedecinLayout() {
-  const insets = useSafeAreaInsets();
-
   return (
-    <Tabs screenOptions={{
-      tabBarActiveTintColor: Colors.primary,
-      tabBarInactiveTintColor: Colors.textMuted,
-      tabBarStyle: {
-        backgroundColor: Colors.surface,
-        borderTopColor: Colors.border,
-        height: 64 + insets.bottom,
-        paddingBottom: 8 + insets.bottom,
-        paddingTop: 8,
-      },
-      tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
-      headerShown: false,
-    }}>
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: "Accueil",
-          tabBarIcon: ({ color }) => <Ionicons name="home" size={22} color={color} />,
-        }}
-      />
-
-      <Tabs.Screen
-        name="patient/list"
-        options={{
-          title: "Mes patients",
-          tabBarIcon: ({ color }) => <Ionicons name="people" size={22} color={color} />,
-        }}
-      />
-
-      <Tabs.Screen
-        name="ordonnance/history"
-        options={{
-          title: "Ordonnances",
-          tabBarIcon: ({ color }) => <Ionicons name="document-text" size={22} color={color} />,
-        }}
-      />
-
-      <Tabs.Screen
-        name="parametre/profil"
-        options={{
-          title: "Profil",
-          tabBarIcon: ({ color }) => <Ionicons name="person" size={22} color={color} />,
-        }}
-      />
-
-      <Tabs.Screen name="patient/add" options={{ href: null }} />
-      <Tabs.Screen name="ordonnance/add" options={{ href: null }} />
-      <Tabs.Screen name="ordonnance/add-by-patient" options={{ href: null }} />
-      <Tabs.Screen name="ordonnance/detail" options={{ href: null }} />
-    </Tabs>
+    <Drawer
+      screenOptions={{ headerShown: false, drawerStyle: { width: '80%', maxWidth: 300 } }}
+      drawerContent={(props) => (
+        <CustomDrawerContent {...props} subtitle="Espace Médical" menuItems={MEDECIN_MENU} />
+      )}
+    >
+      <Drawer.Screen name="(tabs)" options={{ title: 'Accueil', drawerItemStyle: { display: 'none' } }} />
+    </Drawer>
   );
 }

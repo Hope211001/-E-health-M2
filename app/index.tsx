@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, Dimensions, StatusBar } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, Dimensions, StatusBar, Image } from 'react-native';
 import { Link } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -23,7 +23,11 @@ export default function WelcomeScreen() {
             colors={[Colors.primaryLight, Colors.primary]}
             style={styles.logoCircle}
           >
-            <Ionicons name="heart" size={60} color="white" />
+            <Image
+              source={require('../assets/images/icon-sante.png')}
+              style={{ width: 76, height: 76, borderRadius: 18 }}
+              resizeMode="contain"
+            />
           </LinearGradient>
           <View style={styles.pulseRing} />
         </View>

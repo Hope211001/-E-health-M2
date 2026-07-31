@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet,
-  KeyboardAvoidingView, Platform, ScrollView,
+  KeyboardAvoidingView, Platform, ScrollView, Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -76,7 +76,11 @@ export default function LoginScreen() {
       >
       <View style={styles.logoWrap}>
         <View style={styles.logoCircle}>
-          <Ionicons name="heart" size={32} color="white" />
+          <Image
+            source={require('../../assets/images/icon-sante.png')}
+            style={{ width: 44, height: 44, borderRadius: 10 }}
+            resizeMode="contain"
+          />
         </View>
         <Text style={styles.appName}>{APP.name}</Text>
         <Text style={styles.subtitle}>Connectez-vous à votre espace</Text>

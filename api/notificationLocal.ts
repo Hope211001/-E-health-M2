@@ -6,6 +6,20 @@ import Constants from 'expo-constants';
 // uniquement dans un build natif (APK / dev-client).
 const isExpoGo = Constants.executionEnvironment === 'storeClient';
 
+// Son de l'alarme = fichier assets/sounds/alarme.wav (empaqueté via app.json).
+// ⚠️ Le fichier DOIT exister avant le build, sinon `eas build` échoue.
+// Repasser à 'default' (son court système) si tu retires le fichier.
+const ALARM_SOUND = 'alarme.wav';
+
+// Id du canal Android. Android fige les réglages d'un canal à sa création :
+// bumpe le suffixe (-v4, -v5…) à chaque fois que tu changes le son ou les
+// réglages du canal, sinon l'ancien canal garde ses anciens réglages.
+const CHANNEL_ID = 'rappels-medicaments-v3';
+
+// Catégorie qui porte le bouton d'action « J'ai pris ».
+const CATEGORY_ID = 'rappel-medicament';
+const ACTION_PRIS = 'MARQUER_PRIS';
+
 // Lazy import : ne charge expo-notifications que si on est dans un vrai build.
 let Notifications: typeof import('expo-notifications') | null = null;
 try {
@@ -32,20 +46,60 @@ export async function requestNotificationPermission(): Promise<boolean> {
   }
 
   if (Platform.OS === 'android') {
-    await Notifications.setNotificationChannelAsync('rappels-medicaments', {
+    await Notifications.setNotificationChannelAsync(CHANNEL_ID, {
       name: 'Rappels de médicaments',
       importance: Notifications.AndroidImportance.MAX,
-      vibrationPattern: [0, 250, 250, 250],
+      // Vibration longue et insistante (façon alarme) plutôt qu'un buzz court.
+      vibrationPattern: [0, 500, 500, 500, 500, 500, 500],
+      enableVibrate: true,
       lightColor: '#4F46E5',
-      sound: 'default',
+      sound: ALARM_SOUND,
+      // Sonne même si le téléphone est en mode « Ne pas déranger ».
+      bypassDnd: true,
+      lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
     });
   }
+
+  // Bouton « J'ai pris » (permet de couper/acquitter l'alarme depuis la notif).
+  await registerNotificationCategories();
 
   const { status: existing } = await Notifications.getPermissionsAsync();
   if (existing === 'granted') return true;
 
   const { status } = await Notifications.requestPermissionsAsync();
   return status === 'granted';
+}
+
+/** Déclare la catégorie qui porte le bouton d'action « J'ai pris ». */
+export async function registerNotificationCategories(): Promise<void> {
+  if (!Notifications) return;
+  await Notifications.setNotificationCategoryAsync(CATEGORY_ID, [
+    {
+      identifier: ACTION_PRIS,
+      buttonTitle: '✅ J’ai pris',
+      // false = on ne rouvre pas l'app, on coupe juste l'alarme.
+      options: { opensAppToForeground: false },
+    },
+  ]);
+}
+
+/**
+ * Écoute le clic sur le bouton « J'ai pris » et coupe l'alarme (retire la
+ * notification). À appeler une fois au démarrage (voir app/_layout.tsx).
+ * Retourne une fonction de nettoyage, ou undefined en Expo Go.
+ */
+export function setupRappelResponseHandler(): (() => void) | undefined {
+  if (!Notifications) return undefined;
+
+  const sub = Notifications.addNotificationResponseReceivedListener(async (response) => {
+    if (response.actionIdentifier === ACTION_PRIS) {
+      const notifId = response.notification.request.identifier;
+      // Coupe l'alarme en retirant la notification affichée.
+      await Notifications?.dismissNotificationAsync(notifId).catch(() => {});
+    }
+  });
+
+  return () => sub.remove();
 }
 
 type Moment = 'matin' | 'midi' | 'soir';
@@ -88,12 +142,14 @@ export async function scheduleAlerteNotification(p: ScheduleAlerteParams): Promi
         moment: p.moment,
         nomMedicament: p.nomMedicament,
       },
-      sound: 'default',
+      sound: ALARM_SOUND,
+      // Rattache le bouton « J'ai pris » à la notification.
+      categoryIdentifier: CATEGORY_ID,
     },
     trigger: {
       type: Notifications.SchedulableTriggerInputTypes.DATE,
       date: triggerDate,
-      channelId: Platform.OS === 'android' ? 'rappels-medicaments' : undefined,
+      channelId: Platform.OS === 'android' ? CHANNEL_ID : undefined,
     },
   });
 
@@ -157,4 +213,12 @@ export async function schedulePrescriptionNotifications(
 export async function cancelAllScheduledNotifications(): Promise<void> {
   if (!Notifications) return;
   await Notifications.cancelAllScheduledNotificationsAsync();
+}
+
+/** Annule uniquement les rappels programmés d'une prescription donnée (les autres traitements en cours ne sont pas touchés). */
+export async function cancelPrescriptionNotifications(prescriptionId: string): Promise<void> {
+  if (!Notifications) return;
+  const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+  const toCancel = scheduled.filter((n) => n.content?.data?.prescriptionId === prescriptionId);
+  await Promise.all(toCancel.map((n) => Notifications!.cancelScheduledNotificationAsync(n.identifier)));
 }

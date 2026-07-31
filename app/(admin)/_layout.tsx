@@ -1,75 +1,35 @@
-import { Tabs } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import { useContext } from 'react';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Drawer } from 'expo-router/drawer';
 import { AuthContext } from '../../context/AuthContext';
-import { Colors } from '@/constants/theme';
+import CustomDrawerContent, { DrawerMenuItem } from '../../components/CustomDrawerContent';
+import { APP_ROUTES } from '@/constants/routes';
 
 export default function AdminLayout() {
   const { user } = useContext(AuthContext);
   const isSuperadmin = user?.role === 'superadmin';
-  const insets = useSafeAreaInsets();
+
+  const ADMIN_MENU: DrawerMenuItem[] = [
+    { label: 'Tableau de bord', icon: 'grid', route: APP_ROUTES.ADMIN.HOME },
+    { label: 'Médecins', icon: 'medkit', route: APP_ROUTES.ADMIN.MEDECINS },
+    { label: 'Ajouter un médecin', icon: 'person-add', route: APP_ROUTES.ADMIN.MEDECIN_ADD },
+    { label: 'Patients', icon: 'people', route: APP_ROUTES.ADMIN.PATIENTS },
+    { label: 'Statistiques', icon: 'bar-chart', route: APP_ROUTES.ADMIN.GRAPHES },
+    ...(isSuperadmin ? [
+      { label: 'Admins', icon: 'shield-checkmark' as const, route: APP_ROUTES.ADMIN.ADMINS },
+      { label: 'Ajouter un admin', icon: 'shield-half' as const, route: APP_ROUTES.ADMIN.ADMIN_ADD },
+      { label: 'Pharmacies de garde', icon: 'medical' as const, route: APP_ROUTES.ADMIN.PHARMACIE_GARDE },
+    ] : []),
+  ];
 
   return (
-    <Tabs screenOptions={{
-      tabBarActiveTintColor: Colors.admin,
-      tabBarInactiveTintColor: Colors.textMuted,
-      tabBarStyle: {
-        backgroundColor: Colors.surface,
-        borderTopColor: Colors.border,
-        height: 64 + insets.bottom,
-        paddingBottom: 8 + insets.bottom,
-        paddingTop: 8,
-      },
-      tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
-      headerShown: false,
-    }}>
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Tableau de bord',
-          tabBarIcon: ({ color }) => <Ionicons name="grid" size={22} color={color} />,
-        }}
-      />
-
-      <Tabs.Screen
-        name="medecins"
-        options={{
-          title: 'Médecins',
-          tabBarIcon: ({ color }) => <Ionicons name="medkit" size={22} color={color} />,
-        }}
-      />
-
-      <Tabs.Screen
-        name="patients"
-        options={{
-          title: 'Patients',
-          tabBarIcon: ({ color }) => <Ionicons name="people" size={22} color={color} />,
-        }}
-      />
-
-      <Tabs.Screen
-        name="admins"
-        options={{
-          title: 'Admins',
-          tabBarIcon: ({ color }) => <Ionicons name="shield-checkmark" size={22} color={color} />,
-          href: isSuperadmin ? undefined : null,
-        }}
-      />
-
-      <Tabs.Screen
-        name="pharmacie-garde"
-        options={{
-          title: 'Pharmacies',
-          tabBarIcon: ({ color }) => <Ionicons name="medical" size={22} color={color} />,
-          href: isSuperadmin ? undefined : null,
-        }}
-      />
-
-      <Tabs.Screen name="medecin-add" options={{ href: null }} />
-      <Tabs.Screen name="admin-add" options={{ href: null }} />
-      <Tabs.Screen name="pharmacie-garde-form" options={{ href: null }} />
-      <Tabs.Screen name="pharmacie-garde-detail" options={{ href: null }} />
-    </Tabs>
+    <Drawer
+      screenOptions={{ headerShown: false, drawerStyle: { width: '80%', maxWidth: 300 } }}
+      drawerContent={(props) => (
+        <CustomDrawerContent {...props} subtitle="Espace Administration" menuItems={ADMIN_MENU} />
+      )}
+    >
+      <Drawer.Screen name="(tabs)" options={{ title: 'Tableau de bord', drawerItemStyle: { display: 'none' } }} />
+      <Drawer.Screen name="graphes" options={{ title: 'Statistiques', drawerItemStyle: { display: 'none' } }} />
+    </Drawer>
   );
 }

@@ -26,15 +26,17 @@ export default function AdminDashboard() {
 
     (async () => {
       try {
+        // Seuls les compteurs nous intéressent ici : limit=1 évite de rapatrier
+        // toutes les fiches, `total` porte le nombre réel de comptes.
         const [medecins, patients, admins] = await Promise.all([
-          authService.listUsers('medecin'),
-          authService.listUsers('patient'),
-          isSuperadmin ? authService.listUsers('admin') : Promise.resolve([]),
+          authService.listUsers('medecin', { limit: 1 }),
+          authService.listUsers('patient', { limit: 1 }),
+          isSuperadmin ? authService.listUsers('admin', { limit: 1 }) : Promise.resolve(null),
         ]);
         setStats({
-          medecins: medecins.length,
-          patients: patients.length,
-          admins: admins.length,
+          medecins: medecins.total,
+          patients: patients.total,
+          admins: admins?.total ?? 0,
         });
       } catch (error: any) {
         Toast.show({
@@ -65,12 +67,12 @@ export default function AdminDashboard() {
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
 
         {/* --- HEADER --- */}
-        {/* Ambre (couleur complémentaire admin) plutôt que vert : distinct du
-            bandeau AppHeader (toujours vert) juste au-dessus. */}
-        <View className="px-6 py-6 bg-amber-500 rounded-b-[50px] mb-8 shadow-2xl shadow-amber-200">
+        {/* Violet (accent admin) plutôt que vert : distinct du bandeau
+            AppHeader (toujours vert) juste au-dessus. */}
+        <View className="px-6 py-6 bg-violet-600 rounded-b-[50px] mb-8 shadow-2xl shadow-violet-200">
           <View className="flex-row justify-between items-center mb-6">
             <View className="flex-1 pr-3">
-              <Text className="text-amber-100 font-bold text-xs uppercase tracking-[2px]">
+              <Text className="text-violet-100 font-bold text-xs uppercase tracking-[2px]">
                 {isSuperadmin ? 'Super Administrateur' : 'Administrateur'}
               </Text>
               <Text className="text-3xl font-black text-white mt-1">Bonjour,</Text>
@@ -83,8 +85,8 @@ export default function AdminDashboard() {
             </View>
           </View>
 
-          <View className="bg-amber-300 self-start px-4 py-2 rounded-full shadow-sm">
-            <Text className="text-amber-950 font-black text-[10px] uppercase tracking-wider">
+          <View className="bg-violet-200 self-start px-4 py-2 rounded-full shadow-sm">
+            <Text className="text-violet-950 font-black text-[10px] uppercase tracking-wider">
               {stats.medecins + stats.patients + stats.admins} compte{stats.medecins + stats.patients + stats.admins > 1 ? 's' : ''} géré{stats.medecins + stats.patients + stats.admins > 1 ? 's' : ''}
             </Text>
           </View>
@@ -93,7 +95,7 @@ export default function AdminDashboard() {
         {/* --- STATS BENTO --- */}
         <View className="px-6 flex-row gap-4 mb-8">
           <TouchableOpacity
-            onPress={() => router.push(APP_ROUTES.ADMIN.MEDECINS as Href)}
+            onPress={() => router.push(`${APP_ROUTES.ADMIN.UTILISATEURS}?role=medecin` as Href)}
             className="flex-1 bg-emerald-700 p-5 rounded-[30px] justify-between h-36 shadow-xl"
           >
             <View className="bg-white/20 w-10 h-10 rounded-full items-center justify-center">
@@ -106,7 +108,7 @@ export default function AdminDashboard() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            onPress={() => router.push(APP_ROUTES.ADMIN.PATIENTS as Href)}
+            onPress={() => router.push(`${APP_ROUTES.ADMIN.UTILISATEURS}?role=patient` as Href)}
             className="flex-1 bg-sky-50 p-5 rounded-[30px] justify-between h-36 border border-sky-100"
           >
             <View className="bg-sky-600 w-10 h-10 rounded-full items-center justify-center">
@@ -120,15 +122,15 @@ export default function AdminDashboard() {
 
           {isSuperadmin && (
             <TouchableOpacity
-              onPress={() => router.push(APP_ROUTES.ADMIN.ADMINS as Href)}
-              className="flex-1 bg-amber-50 p-5 rounded-[30px] justify-between h-36 border border-amber-100"
+              onPress={() => router.push(`${APP_ROUTES.ADMIN.UTILISATEURS}?role=admin` as Href)}
+              className="flex-1 bg-violet-50 p-5 rounded-[30px] justify-between h-36 border border-violet-100"
             >
-              <View className="bg-amber-500 w-10 h-10 rounded-full items-center justify-center">
+              <View className="bg-violet-600 w-10 h-10 rounded-full items-center justify-center">
                 <Ionicons name="shield-checkmark" size={20} color="white" />
               </View>
               <View>
-                <Text className="text-amber-900 text-3xl font-black tracking-tighter">{String(stats.admins).padStart(2, '0')}</Text>
-                <Text className="text-amber-600 font-bold text-[10px] uppercase">Admins</Text>
+                <Text className="text-violet-900 text-3xl font-black tracking-tighter">{String(stats.admins).padStart(2, '0')}</Text>
+                <Text className="text-violet-600 font-bold text-[10px] uppercase">Admins</Text>
               </View>
             </TouchableOpacity>
           )}
@@ -167,14 +169,14 @@ export default function AdminDashboard() {
           {isSuperadmin && (
             <TouchableOpacity
               onPress={() => router.push(APP_ROUTES.ADMIN.ADMIN_ADD as Href)}
-              className="bg-amber-500 p-6 rounded-[35px] flex-row items-center shadow-xl shadow-amber-100"
+              className="bg-violet-600 p-6 rounded-[35px] flex-row items-center shadow-xl shadow-violet-100"
             >
               <View className="bg-white/20 w-16 h-16 rounded-2xl items-center justify-center mr-4">
                 <Ionicons name="shield-half" size={30} color="white" />
               </View>
               <View className="flex-1">
                 <Text className="text-white font-black text-lg">Ajouter un admin</Text>
-                <Text className="text-amber-50 text-xs font-bold mt-0.5">Déléguer la gestion de la plateforme</Text>
+                <Text className="text-violet-100 text-xs font-bold mt-0.5">Déléguer la gestion de la plateforme</Text>
               </View>
               <Ionicons name="chevron-forward" size={22} color="white" />
             </TouchableOpacity>

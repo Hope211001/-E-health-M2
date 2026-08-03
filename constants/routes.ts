@@ -30,14 +30,20 @@ export const APP_ROUTES = {
   },
   ADMIN: {
     HOME: "/(admin)/(tabs)",
-    MEDECINS: "/(admin)/(tabs)/medecins",
+    // Écran unique regroupant médecins, patients et (superadmin) admins.
+    // Accepte ?role=medecin|patient|admin pour ouvrir directement le bon onglet.
+    UTILISATEURS: "/(admin)/(tabs)/utilisateurs",
     MEDECIN_ADD: "/(admin)/(tabs)/medecin-add",
-    ADMINS: "/(admin)/(tabs)/admins",
+    PATIENT_ADD: "/(admin)/(tabs)/patient-add",
     ADMIN_ADD: "/(admin)/(tabs)/admin-add",
-    PATIENTS: "/(admin)/(tabs)/patients",
     PHARMACIE_GARDE: "/(admin)/(tabs)/pharmacie-garde",
     PHARMACIE_GARDE_FORM: "/(admin)/(tabs)/pharmacie-garde-form",
     PHARMACIE_GARDE_DETAIL: "/(admin)/(tabs)/pharmacie-garde-detail",
-    GRAPHES: "/(admin)/graphes",
+    // Écran OCR d'une publication : attend ?id=<pharmacieGardeId>
+    OCR: "/(admin)/(tabs)/ocr",
+    // Dossiers consultés par l'administration : attendent ?id=<uid>
+    DOSSIER_PATIENT: "/(admin)/(tabs)/dossier-patient",
+    DOSSIER_MEDECIN: "/(admin)/(tabs)/dossier-medecin",
+    GRAPHES: "/(admin)/(tabs)/graphes",
   },
 } as const;

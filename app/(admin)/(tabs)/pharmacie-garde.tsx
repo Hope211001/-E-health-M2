@@ -333,18 +333,39 @@ export default function PharmacieGardeListScreen() {
               </TouchableOpacity>
             )}
 
-            {/* Bouton : voir tout le détail */}
-            <TouchableOpacity
-              style={styles.detailBtn}
-              activeOpacity={0.85}
-              onPress={() => router.push({
-                pathname: APP_ROUTES.ADMIN.PHARMACIE_GARDE_DETAIL,
-                params: { id: item.id },
-              })}
-            >
-              <Ionicons name="expand" size={16} color={Colors.admin} />
-              <Text style={styles.detailBtnTxt}>Voir tout le détail</Text>
-            </TouchableOpacity>
+            {/* Détail, et OCR pour les seules publications visibles */}
+            <View style={styles.detailRow}>
+              <TouchableOpacity
+                style={[styles.detailBtn, { flex: 1 }]}
+                activeOpacity={0.85}
+                onPress={() => router.push({
+                  pathname: APP_ROUTES.ADMIN.PHARMACIE_GARDE_DETAIL,
+                  params: { id: item.id },
+                })}
+              >
+                <Ionicons name="expand" size={16} color={Colors.admin} />
+                <Text style={styles.detailBtnTxt}>
+                  {item.isVisible ? 'Voir le détail' : 'Voir tout le détail'}
+                </Text>
+              </TouchableOpacity>
+
+              {/* Réservé aux publications visibles : inutile d'analyser une
+                  affiche masquée, que les patients ne verront pas. Ouvre
+                  l'écran OCR dédié, où se fait la génération. */}
+              {item.isVisible && (
+                <TouchableOpacity
+                  style={[styles.detailBtn, styles.ocrBtn, { flex: 1 }]}
+                  activeOpacity={0.85}
+                  onPress={() => router.push({
+                    pathname: APP_ROUTES.ADMIN.OCR,
+                    params: { id: item.id },
+                  })}
+                >
+                  <Ionicons name="scan" size={16} color={Colors.adminAccentDark} />
+                  <Text style={styles.ocrBtnTxt}>Générer OCR</Text>
+                </TouchableOpacity>
+              )}
+            </View>
 
             {/* Boutons CRUD */}
             <View style={styles.actions}>
@@ -596,6 +617,10 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
   },
   detailBtnTxt: { color: Colors.admin, fontWeight: '700', fontSize: 13 },
+  detailRow: { flexDirection: 'row', gap: 8 },
+  ocrBtn: { backgroundColor: Colors.adminAccentSoft, borderColor: Colors.adminAccentSoft },
+  ocrBtnDisabled: { opacity: 0.45 },
+  ocrBtnTxt: { color: Colors.adminAccentDark, fontWeight: '700', fontSize: 13 },
   attachRow: { flexDirection: 'row', gap: 6, marginTop: 10 },
   thumb: {
     width: 56, height: 56, borderRadius: Radius.md,

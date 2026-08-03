@@ -32,28 +32,21 @@ export default function AdminTabsLayout() {
         }}
       />
 
+      {/* Un seul onglet pour les comptes : l'écran expose lui-même un bouton
+          par type (médecins / patients / admins selon le rôle). */}
       <Tabs.Screen
-        name="medecins"
+        name="utilisateurs"
         options={{
-          title: 'Médecins',
-          tabBarIcon: ({ color }) => <Ionicons name="medkit" size={22} color={color} />,
-        }}
-      />
-
-      <Tabs.Screen
-        name="patients"
-        options={{
-          title: 'Patients',
+          title: 'Utilisateurs',
           tabBarIcon: ({ color }) => <Ionicons name="people" size={22} color={color} />,
         }}
       />
 
       <Tabs.Screen
-        name="admins"
+        name="graphes"
         options={{
-          title: 'Admins',
-          tabBarIcon: ({ color }) => <Ionicons name="shield-checkmark" size={22} color={color} />,
-          href: isSuperadmin ? undefined : null,
+          title: 'Statistiques',
+          tabBarIcon: ({ color }) => <Ionicons name="bar-chart" size={22} color={color} />,
         }}
       />
 
@@ -67,9 +60,13 @@ export default function AdminTabsLayout() {
       />
 
       <Tabs.Screen name="medecin-add" options={{ href: null }} />
+      <Tabs.Screen name="patient-add" options={{ href: null }} />
       <Tabs.Screen name="admin-add" options={{ href: null }} />
       <Tabs.Screen name="pharmacie-garde-form" options={{ href: null }} />
       <Tabs.Screen name="pharmacie-garde-detail" options={{ href: null }} />
+      <Tabs.Screen name="ocr" options={{ href: null }} />
+      <Tabs.Screen name="dossier-patient" options={{ href: null }} />
+      <Tabs.Screen name="dossier-medecin" options={{ href: null }} />
     </Tabs>
   );
 }

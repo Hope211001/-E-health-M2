@@ -9,13 +9,23 @@ export interface PrescriptionsParPeriode {
 }
 
 export interface PrescriptionsParMedecin {
+    total: number;
+    medecinsDistincts: number;
+    /** Top 10 des médecins, du plus prescripteur au moins prescripteur. */
     data: { medecinId: string; nom: string; total: number }[];
+}
+
+export interface DiagnosticFrequent {
+    label: string;
+    total: number;
+    /** true sur la ligne agrégée "Autres" (hors top 10). */
+    estAutres?: boolean;
 }
 
 export interface DiagnosticsFrequents {
     total: number;
     diagnosticsDistincts: number;
-    data: { label: string; total: number }[];
+    data: DiagnosticFrequent[];
 }
 
 class StatsService extends ClientService {

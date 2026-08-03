@@ -32,17 +32,27 @@ export const Colors = {
   patientBg: '#F0F9FF',
 
   // Vert admin / superadmin — même famille que le vert de marque (cohérence
-  // avec patient/médecin), avec un accent ambré complémentaire pour les CTA
-  // et les mises en avant (variété visuelle, façon bandeaux multicolores du
-  // dashboard patient).
+  // avec patient/médecin), avec un accent violet pour les CTA et les mises en
+  // avant (variété visuelle, façon bandeaux multicolores du dashboard patient).
+  //
+  // Violet et non le complément strict du vert (qui serait un rose ~#E11D48) :
+  // ce rose est trop proche de `danger`, et réutiliser une teinte d'état pour
+  // l'identité admin brouillerait la lecture. Le violet est la seule grande
+  // famille de teintes encore libre dans la palette.
   admin: '#059669',
   adminDark: '#047857',
   adminSoft: '#D1FAE5',
   adminBg: '#F0FDF4',
-  adminAccent: '#D97706',
-  adminAccentDark: '#B45309',
-  adminAccentSoft: '#FEF3C7',
-  adminAccentBg: '#FFFBEB',
+  adminAccent: '#7C3AED',
+  adminAccentDark: '#6D28D9',
+  adminAccentSoft: '#EDE9FE',
+  adminAccentBg: '#F5F3FF',
+
+  // Bleu réservé aux courbes de statistiques (série "médecins"). Volontairement
+  // distinct du bleu patient et du bleu d'état 'info', qui ont déjà un sens.
+  chartBlue: '#2563EB',
+  chartBlueDark: '#1D4ED8',
+  chartBlueSoft: '#DBEAFE',
 
   // Texte
   textPrimary: '#0F172A',

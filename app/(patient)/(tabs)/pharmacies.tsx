@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import {
-  View, Text, ScrollView, ActivityIndicator, StatusBar, Image,
+  View, Text, ScrollView, ActivityIndicator, StatusBar, Image, Linking,
   TouchableOpacity, RefreshControl, Dimensions, NativeSyntheticEvent, NativeScrollEvent,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter, Href } from 'expo-router';
 import Toast from 'react-native-toast-message';
 import { pharmacieGardeService } from '../../../api/pharmacieGardeService';
+import { ocrService, ResultatOcr } from '../../../api/ocrService';
 import { PharmacieGarde } from '../../../types/collection';
 import { ZoomableImageViewer } from '../../../components/ZoomableImageViewer';
 import { APP_ROUTES } from '../../../constants/routes';
@@ -23,10 +24,28 @@ export default function PatientPharmaciesScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [zoomUri, setZoomUri] = useState<string | null>(null);
+  // Résultats d'OCR par publication, uniquement ceux qui contiennent au moins
+  // une pharmacie : une entrée absente signifie « rien à afficher ».
+  const [ocrs, setOcrs] = useState<Record<string, ResultatOcr>>({});
 
   const load = async () => {
     try {
-      setItems(await pharmacieGardeService.listVisible());
+      const liste = await pharmacieGardeService.listVisible();
+      setItems(liste);
+
+      // Les listes détaillées (issues de l'OCR des affiches) sont chargées en
+      // parallèle, après coup : une publication sans OCR — ou dont la lecture
+      // échoue — reste affichée normalement avec son affiche.
+      const resultats = await Promise.all(
+        liste.map((p) => ocrService.getPourPharmacieGarde(p.id).catch(() => null)),
+      );
+
+      const parPublication: Record<string, ResultatOcr> = {};
+      liste.forEach((p, i) => {
+        const ocr = resultats[i];
+        if (ocr && ocr.pharmacies.length > 0) parPublication[p.id] = ocr;
+      });
+      setOcrs(parPublication);
     } catch (error: any) {
       Toast.show({
         type: 'error',
@@ -107,6 +126,7 @@ export default function PatientPharmaciesScreen() {
               <PharmacieCard
                 key={item.id}
                 item={item}
+                ocr={ocrs[item.id] ?? null}
                 expanded={!!expanded[item.id]}
                 onToggle={() => setExpanded((p) => ({ ...p, [item.id]: !p[item.id] }))}
                 onZoom={setZoomUri}
@@ -125,16 +145,25 @@ export default function PatientPharmaciesScreen() {
   );
 }
 
+/** Nombre de pharmacies affichées avant de replier la liste. */
+const APERCU_PHARMACIES = 5;
+
 function PharmacieCard({
-  item, expanded, onToggle, onZoom,
+  item, ocr, expanded, onToggle, onZoom,
 }: {
   item: PharmacieGarde;
+  ocr: ResultatOcr | null;
   expanded: boolean;
   onToggle: () => void;
   onZoom: (uri: string) => void;
 }) {
   const [page, setPage] = useState(0);
+  const [listeOuverte, setListeOuverte] = useState(false);
   const images = item.attachement;
+
+  const pharmacies = ocr?.pharmacies ?? [];
+  const visibles = listeOuverte ? pharmacies : pharmacies.slice(0, APERCU_PHARMACIES);
+  const restantes = pharmacies.length - visibles.length;
 
   const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     setPage(Math.round(e.nativeEvent.contentOffset.x / CARD_W));
@@ -216,6 +245,92 @@ function PharmacieCard({
             )}
           </>
         ) : null}
+
+        {/* Liste détaillée issue de l'OCR de l'affiche. Affichée seulement si
+            au moins une pharmacie a pu être extraite : sinon l'affiche seule
+            fait le travail. */}
+        {pharmacies.length > 0 && (
+          <View className="mt-4 pt-4 border-t border-slate-100">
+            <View className="flex-row items-center mb-3">
+              <Ionicons name="list" size={14} color="#0EA5E9" />
+              <Text className="text-slate-900 font-black text-xs uppercase tracking-wide ml-1.5">
+                Liste détaillée
+              </Text>
+              <Text className="text-slate-400 text-[11px] font-bold ml-2">
+                {pharmacies.length} pharmacie{pharmacies.length > 1 ? 's' : ''}
+              </Text>
+            </View>
+
+            {visibles.map((p, i) => (
+              <View key={`${p.nom}-${i}`}>
+                {/* En-tête de ville : l'affiche est organisée par blocs, on
+                    reproduit ce découpage plutôt que d'aligner 30 pharmacies
+                    à la suite. Affiché au premier élément et à chaque
+                    changement de ville. */}
+                {!!p.ville && p.ville !== visibles[i - 1]?.ville && (
+                  <View className="flex-row items-center mb-2 mt-1">
+                    <Ionicons name="business" size={13} color="#0EA5E9" />
+                    <Text className="text-sky-700 font-black text-[11px] uppercase tracking-wide ml-1.5">
+                      {p.ville}
+                    </Text>
+                    <View className="flex-1 h-px bg-sky-100 ml-2" />
+                  </View>
+                )}
+
+                <View
+                  className={`flex-row ${i < visibles.length - 1 ? 'mb-3 pb-3 border-b border-slate-50' : ''}`}
+                >
+                <View className="bg-sky-50 w-6 h-6 rounded-full items-center justify-center mr-3 mt-0.5">
+                  <Text className="text-sky-600 font-black text-[11px]">{i + 1}</Text>
+                </View>
+
+                <View className="flex-1">
+                  <Text className="text-slate-900 font-bold text-sm">
+                    {p.nom || 'Pharmacie'}
+                  </Text>
+
+                  {p.adresse ? (
+                    <View className="flex-row items-start mt-1">
+                      <Ionicons name="location-outline" size={13} color="#94A3B8" style={{ marginTop: 1 }} />
+                      <Text className="text-slate-500 text-xs ml-1 flex-1">{p.adresse}</Text>
+                    </View>
+                  ) : null}
+
+                  {/* Chaque numéro est cliquable : sur un téléphone, c'est
+                      l'action attendue depuis une liste de pharmacies. */}
+                  {p.telephones.length > 0 && (
+                    <View className="flex-row flex-wrap items-center mt-1.5">
+                      {p.telephones.map((tel, j) => (
+                        <TouchableOpacity
+                          key={j}
+                          activeOpacity={0.7}
+                          onPress={() => Linking.openURL(`tel:${tel.replace(/\s/g, '')}`)}
+                          className="bg-emerald-50 rounded-full px-2.5 py-1 mr-1.5 mb-1.5 flex-row items-center"
+                        >
+                          <Ionicons name="call" size={11} color="#059669" />
+                          <Text className="text-emerald-700 font-bold text-[11px] ml-1">{tel}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  )}
+                </View>
+                </View>
+              </View>
+            ))}
+
+            {(restantes > 0 || listeOuverte) && (
+              <TouchableOpacity
+                onPress={() => setListeOuverte((v) => !v)}
+                className="mt-1 py-2 items-center"
+                activeOpacity={0.7}
+              >
+                <Text className="text-sky-600 font-bold text-xs">
+                  {listeOuverte ? 'Réduire la liste ▲' : `Voir les ${restantes} autres ▼`}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
       </View>
     </View>
   );

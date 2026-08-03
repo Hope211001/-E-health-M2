@@ -9,6 +9,16 @@ import {
 } from 'firebase/auth';
 import { User, Medecin } from '../types/collection';
 
+/** Réponse paginée de GET /auth/users. */
+export interface PageUtilisateurs {
+  data: User[];
+  page: number;
+  limit: number;
+  /** Nombre total de comptes correspondant au rôle et à la recherche. */
+  total: number;
+  totalPages: number;
+}
+
 class AuthService extends ClientService {
 
   async login(email: string, pass: string): Promise<User> {
@@ -42,9 +52,19 @@ class AuthService extends ClientService {
     await sendPasswordResetEmail(auth, email);
   }
 
-  async registerPatient(email: string, pass: string, tel: string) {
+  /**
+   * Crée un patient. Appelé par un médecin — qui devient automatiquement le
+   * médecin traitant — ou par l'administration, qui doit alors désigner ce
+   * médecin via `medecinId`.
+   */
+  async registerPatient(
+    email: string,
+    pass: string,
+    tel: string,
+    extra?: { medecinId?: string; nom?: string; prenom?: string },
+  ) {
     const response = await this.api.post('/auth/register-patient', {
-      email, password: pass, tel,
+      email, password: pass, tel, ...extra,
     });
     return response.data;
   }
@@ -67,9 +87,25 @@ class AuthService extends ClientService {
     return response.data;
   }
 
-  async listUsers(role?: 'medecin' | 'patient' | 'admin' | 'superadmin'): Promise<User[]> {
-    const response = await this.api.get<User[]>('/auth/users', {
-      params: role ? { role } : undefined,
+  /**
+   * Liste paginée des utilisateurs. `q` cherche dans le nom, le prénom, l'email
+   * et le téléphone (insensible à la casse et aux accents).
+   *
+   * `all: true` désactive la pagination et renvoie tous les comptes — à réserver
+   * aux sélecteurs, où une troncature passerait inaperçue et serait un bug.
+   */
+  async listUsers(
+    role?: 'medecin' | 'patient' | 'admin' | 'superadmin',
+    options?: { q?: string; page?: number; limit?: number; all?: boolean },
+  ): Promise<PageUtilisateurs> {
+    const response = await this.api.get<PageUtilisateurs>('/auth/users', {
+      params: {
+        ...(role ? { role } : {}),
+        ...(options?.q ? { q: options.q } : {}),
+        ...(options?.all ? { all: 'true' } : {}),
+        ...(options?.page ? { page: options.page } : {}),
+        ...(options?.limit ? { limit: options.limit } : {}),
+      },
     });
     return response.data;
   }

@@ -1,12 +1,16 @@
 import axios, { AxiosInstance } from 'axios';
-import { auth } from './firebase'; 
+import { auth } from './firebase';
+
+// IP locale du backend — configurable via .env.local (EXPO_PUBLIC_API_BASE_URL),
+// valeur par défaut en secours. À changer quand tu changes de réseau/PC.
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? 'http://192.168.0.148:5000/api';
 
 export class ClientService {
     protected api: AxiosInstance;
 
     constructor() {
         this.api = axios.create({
-            baseURL: 'http://192.168.0.148:5000/api',
+            baseURL: API_BASE_URL,
             headers: { 'Content-Type': 'application/json' }
         });
 

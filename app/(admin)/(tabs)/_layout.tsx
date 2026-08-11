@@ -59,6 +59,10 @@ export default function AdminTabsLayout() {
         }}
       />
 
+      {/* Profil accessible depuis l'avatar du tableau de bord plutôt que par un
+          onglet : à cinq, les libellés de la barre deviennent illisibles. */}
+      <Tabs.Screen name="profil" options={{ href: null }} />
+
       <Tabs.Screen name="medecin-add" options={{ href: null }} />
       <Tabs.Screen name="patient-add" options={{ href: null }} />
       <Tabs.Screen name="admin-add" options={{ href: null }} />

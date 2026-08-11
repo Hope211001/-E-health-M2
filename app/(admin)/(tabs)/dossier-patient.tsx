@@ -8,6 +8,7 @@ import { dossierService, DossierPatient } from '../../../api/dossierService';
 import { PrescriptionsListe, formatDateCourte } from '../../../components/PrescriptionsListe';
 import { APP_ROUTES } from '@/constants/routes';
 import { Colors, Radius, Spacing } from '@/constants/theme';
+import { origineCompte } from '@/utils/roles';
 import AppHeader from '../../../components/AppHeader';
 
 /** Ligne « libellé / valeur » des cartes d'information. */
@@ -151,6 +152,8 @@ export default function DossierPatientScreen() {
           <Info label="Naissance" valeur={formatDateCourte(dossier.dateNaissance)} />
           <Info label="Adresse" valeur={dossier.adresse} />
           <Info label="Inscrit le" valeur={formatDateCourte(dossier.dateCreation)} />
+          <Info label="Créé par" valeur={origineCompte(dossier)} />
+          <Info label="Identifiant" valeur={dossier.uid} />
         </View>
 
         {/* Données médicales */}

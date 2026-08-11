@@ -19,6 +19,14 @@ const loginSchema = z.object({
 });
 
 function redirectByRole(router: ReturnType<typeof useRouter>, user: User) {
+  // Première connexion avec le mot de passe reçu par email : on lui propose
+  // d'en définir un avant d'entrer dans son espace. GardeMotDePasse produirait
+  // le même résultat, mais après un affichage éclair du tableau de bord.
+  if (user.proposerChangementMotDePasse) {
+    router.replace(APP_ROUTES.AUTH.CHANGER_MOT_DE_PASSE);
+    return;
+  }
+
   switch (user.role) {
     case 'medecin':
       router.replace(APP_ROUTES.MEDECIN.HOME); break;

@@ -3,18 +3,27 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { authService } from '../../../../api/authService';
-import AppHeader from '../../../../components/AppHeader';
-import { AppScrollView } from '../../../../components/AppScrollView';
-import CarteProfilCompte from '../../../../components/CarteProfilCompte';
+import { authService } from '../../../api/authService';
+import AppHeader from '../../../components/AppHeader';
+import { AppScrollView } from '../../../components/AppScrollView';
+import CarteProfilCompte from '../../../components/CarteProfilCompte';
+import { useAuth } from '../../../hooks/useAuth';
 import { Colors, Radius, Spacing } from '@/constants/theme';
 
-export default function ProfilScreen() {
+/**
+ * Profil du compte d'administration. L'espace admin n'en avait aucun : le
+ * superadmin ne pouvait donc ni corriger son état civil ni ajouter sa photo,
+ * alors qu'il peut le faire pour tous les autres comptes.
+ */
+export default function ProfilAdminScreen() {
   const router = useRouter();
+  const { user } = useAuth();
+  const isSuperadmin = user?.role === 'superadmin';
+
+  const couleur = isSuperadmin ? Colors.adminAccent : Colors.admin;
+  const fond = isSuperadmin ? Colors.adminAccentBg : Colors.adminBg;
 
   const handleLogout = async () => {
-    // Passe par le service : il révoque aussi le token côté serveur, alors
-    // qu'un signOut seul laisserait la session utilisable jusqu'à expiration.
     await authService.logout();
     router.replace('/');
   };
@@ -27,17 +36,17 @@ export default function ProfilScreen() {
         <Text style={styles.titre}>Mon profil</Text>
 
         <CarteProfilCompte
-          couleur={Colors.primary}
-          fond={Colors.primaryBg}
-          icone="medkit"
-          roleLabel="Médecin"
+          couleur={couleur}
+          fond={fond}
+          icone={isSuperadmin ? 'key' : 'shield-checkmark'}
+          roleLabel={isSuperadmin ? 'Super administrateur' : 'Administrateur'}
         />
 
         <View style={styles.info}>
-          <Ionicons name="information-circle-outline" size={16} color={Colors.textMuted} />
+          <Ionicons name="lock-closed-outline" size={16} color={Colors.textMuted} />
           <Text style={styles.infoTxt}>
-            Votre nom et votre photo sont visibles par vos patients, dans leurs
-            ordonnances et dans la messagerie.
+            Le rôle et l&apos;adresse email ne sont pas modifiables : le premier
+            détermine vos droits, la seconde sert à vous connecter.
           </Text>
         </View>
 

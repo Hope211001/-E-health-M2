@@ -7,7 +7,36 @@ import {
   signInWithCredential,
   GoogleAuthProvider,
 } from 'firebase/auth';
-import { User, Medecin } from '../types/collection';
+import { User, Medecin, Sexe, UserRole } from '../types/collection';
+
+/**
+ * Photo envoyée à l'API : data URI base64 pour une nouvelle image, URL http(s)
+ * pour une image déjà hébergée, chaîne vide pour retirer la photo.
+ * Voir utils/photoProfil.ts et back-e-health/src/services/cloudinaryService.js.
+ */
+export type PhotoEnvoyee = string;
+
+/** Champs d'état civil communs à tous les rôles. */
+export interface IdentiteCompte {
+  nom?: string;
+  prenom?: string;
+  photo?: PhotoEnvoyee;
+  /** 'M', 'F' ou '' (non renseigné) — l'API refuse toute autre valeur. */
+  sexe?: Sexe | '';
+  adresse?: string;
+}
+
+/**
+ * Marqueur ajouté par le backend aux réponses de création de compte.
+ *
+ * Le mot de passe étant généré côté serveur et envoyé par email au titulaire,
+ * un email non parti signifie que la personne ne peut pas encore se connecter —
+ * le compte, lui, existe bel et bien. Les écrans doivent donc distinguer les
+ * deux cas au lieu d'annoncer un succès sans nuance.
+ */
+export interface CreationCompte {
+  emailEnvoye?: boolean;
+}
 
 /** Réponse paginée de GET /auth/users. */
 export interface PageUtilisateurs {
@@ -56,34 +85,111 @@ class AuthService extends ClientService {
    * Crée un patient. Appelé par un médecin — qui devient automatiquement le
    * médecin traitant — ou par l'administration, qui doit alors désigner ce
    * médecin via `medecinId`.
+   *
+   * Aucun mot de passe n'est transmis : le backend en génère un et l'envoie
+   * par email au patient. Celui qui crée le compte ne le connaît donc jamais.
    */
   async registerPatient(
     email: string,
-    pass: string,
     tel: string,
-    extra?: { medecinId?: string; nom?: string; prenom?: string },
-  ) {
+    extra?: IdentiteCompte & { medecinId?: string },
+  ): Promise<CreationCompte> {
     const response = await this.api.post('/auth/register-patient', {
-      email, password: pass, tel, ...extra,
+      email, tel, ...extra,
     });
     return response.data;
   }
 
+  /** Mot de passe généré et envoyé par le backend — voir registerPatient. */
   async registerMedecin(
-    email: string, pass: string, tel: string, spec: string[], ordre: string
-  ): Promise<Medecin> {
-    const response = await this.api.post<Medecin>('/auth/register-medecin', {
-      email, password: pass, tel, spec, ordre,
+    email: string,
+    tel: string,
+    spec: string[],
+    ordre: string,
+    extra?: IdentiteCompte,
+  ): Promise<Medecin & CreationCompte> {
+    const response = await this.api.post<Medecin & CreationCompte>('/auth/register-medecin', {
+      email, tel, spec, ordre, ...extra,
     });
     return response.data;
   }
 
+  /**
+   * Crée un compte d'administration. `role` vaut 'admin' par défaut ; un
+   * superadmin peut aussi créer un pair en passant 'superadmin'.
+   *
+   * Mot de passe généré et envoyé par le backend — voir registerPatient.
+   */
   async registerAdmin(
-    email: string, pass: string, tel: string, nom: string, prenom: string
-  ): Promise<User> {
-    const response = await this.api.post<User>('/auth/register-admin', {
-      email, password: pass, tel, nom, prenom,
+    email: string,
+    tel: string,
+    nom: string,
+    prenom: string,
+    extra?: Omit<IdentiteCompte, 'nom' | 'prenom'> & { role?: 'admin' | 'superadmin' },
+  ): Promise<User & CreationCompte> {
+    const response = await this.api.post<User & CreationCompte>('/auth/register-admin', {
+      email, tel, nom, prenom, ...extra,
     });
+    return response.data;
+  }
+
+  /**
+   * Remplace son propre mot de passe.
+   *
+   * Le passage par le backend (et non `updatePassword` du SDK Firebase client)
+   * permet de basculer `proposerChangementMotDePasse` à false dans le même
+   * échange : en deux appels séparés, un réseau coupé entre les deux laisserait
+   * un compte dont le mot de passe a changé mais à qui l'application reposerait
+   * la question à chaque ouverture.
+   */
+  async changerMotDePasse(nouveauMotDePasse: string): Promise<void> {
+    await this.api.post('/auth/motdepasse', { nouveauMotDePasse });
+  }
+
+  /**
+   * Décline la proposition : le titulaire garde le mot de passe reçu par email.
+   *
+   * Réponse aussi valable que le changement — celui reçu est un vrai mot de
+   * passe, pas un code provisoire. On enregistre seulement que la question a
+   * été posée, pour ne pas la reposer à chaque connexion.
+   */
+  async conserverMotDePasse(): Promise<void> {
+    await this.api.post('/auth/motdepasse/conserver');
+  }
+
+  /**
+   * Renvoie ses identifiants au titulaire d'un compte, avec un NOUVEAU mot de
+   * passe — l'ancien est irrécupérable, Firebase n'en garde qu'une empreinte.
+   *
+   * Sert quand l'email de création n'est jamais arrivé : SMTP tombé, message
+   * classé en indésirables, adresse corrigée depuis. Les sessions ouvertes du
+   * compte sont révoquées au passage.
+   */
+  async renvoyerIdentifiants(uid: string): Promise<{ email: string; emailEnvoye: boolean }> {
+    const response = await this.api.post(`/auth/users/${uid}/renvoyer-identifiants`);
+    return response.data;
+  }
+
+  /** Profil d'un compte (document `users`). */
+  async getProfile(uid: string): Promise<User> {
+    const response = await this.api.get<User>(`/auth/profile/${uid}`);
+    return response.data;
+  }
+
+  /**
+   * Met à jour l'état civil, le téléphone et la photo d'un compte.
+   *
+   * Seuls les champs fournis sont modifiés : omettre `photo` laisse la photo
+   * actuelle en place, alors que la passer à '' la supprime.
+   */
+  async updateProfile(
+    uid: string,
+    donnees: {
+      nom?: string; prenom?: string; tel?: string; photo?: PhotoEnvoyee;
+      sexe?: Sexe | ''; adresse?: string;
+    },
+  ): Promise<User> {
+    const response = await this.api.patch<User>(`/auth/profile/${uid}`, donnees);
     return response.data;
   }
 
@@ -91,16 +197,23 @@ class AuthService extends ClientService {
    * Liste paginée des utilisateurs. `q` cherche dans le nom, le prénom, l'email
    * et le téléphone (insensible à la casse et aux accents).
    *
+   * `role` accepte un tableau pour regrouper plusieurs niveaux dans une même
+   * liste (ex: `['admin', 'superadmin']`).
+   *
    * `all: true` désactive la pagination et renvoie tous les comptes — à réserver
    * aux sélecteurs, où une troncature passerait inaperçue et serait un bug.
    */
   async listUsers(
-    role?: 'medecin' | 'patient' | 'admin' | 'superadmin',
+    role?: UserRole | UserRole[],
     options?: { q?: string; page?: number; limit?: number; all?: boolean },
   ): Promise<PageUtilisateurs> {
+    // Plusieurs rôles sont transmis en une seule valeur séparée par des
+    // virgules, forme attendue par le backend.
+    const roles = Array.isArray(role) ? role.join(',') : role;
+
     const response = await this.api.get<PageUtilisateurs>('/auth/users', {
       params: {
-        ...(role ? { role } : {}),
+        ...(roles ? { role: roles } : {}),
         ...(options?.q ? { q: options.q } : {}),
         ...(options?.all ? { all: 'true' } : {}),
         ...(options?.page ? { page: options.page } : {}),

@@ -3,6 +3,11 @@ export const APP_ROUTES = {
     LOGIN: "/(auth)/login",
     REGISTER: "/(auth)/register-medecin",
     FORGOT_PASSWORD: "/(auth)/forgot-password",
+    /**
+     * Choix du mot de passe définitif, imposé tant que `motDePasseTemporaire`
+     * est vrai. Voir components/GardeMotDePasse.tsx.
+     */
+    CHANGER_MOT_DE_PASSE: "/(auth)/changer-mot-de-passe",
   },
   MEDECIN: {
     REGISTER: "/(medecin)/register-medecin",
@@ -33,6 +38,7 @@ export const APP_ROUTES = {
     // Écran unique regroupant médecins, patients et (superadmin) admins.
     // Accepte ?role=medecin|patient|admin pour ouvrir directement le bon onglet.
     UTILISATEURS: "/(admin)/(tabs)/utilisateurs",
+    PROFIL: "/(admin)/(tabs)/profil",
     MEDECIN_ADD: "/(admin)/(tabs)/medecin-add",
     PATIENT_ADD: "/(admin)/(tabs)/patient-add",
     ADMIN_ADD: "/(admin)/(tabs)/admin-add",

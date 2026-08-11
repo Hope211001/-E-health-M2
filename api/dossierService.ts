@@ -1,5 +1,5 @@
 import { ClientService } from './clientService';
-import { Prescription } from '../types/collection';
+import { AuthProvider, Createur, Prescription, Sexe } from '../types/collection';
 
 /** Répartition des prises de médicaments d'un patient. */
 export interface Observance {
@@ -15,9 +15,13 @@ export interface DossierPatient {
   identite: string;
   email: string;
   telephone: string;
+  photoURL: string;
   statut: 'actif' | 'inactif';
   dateCreation: any;
-  sexe: 'M' | 'F' | null;
+  /** Compte ayant enregistré ce patient (son médecin, ou l'administration). */
+  createur: Createur | null;
+  authProvider: AuthProvider | null;
+  sexe: Sexe | null;
   dateNaissance: any;
   adresse: string;
   numeroPatient: string;
@@ -25,7 +29,7 @@ export interface DossierPatient {
   allergies: string[];
   antecedents: string[];
   horairesRappel: { matin?: string; midi?: string; soir?: string } | null;
-  medecinTraitant: { uid: string; nom: string; email: string; telephone: string } | null;
+  medecinTraitant: { uid: string; nom: string; email: string; telephone: string; photoURL: string } | null;
   observance: Observance;
   nbPrescriptions: number;
   prescriptions: Prescription[];
@@ -37,6 +41,7 @@ export interface PatientDuMedecin {
   identite: string;
   email: string;
   telephone: string;
+  photoURL: string;
   numeroPatient: string;
   statut: 'actif' | 'inactif';
   dateCreation: any;
@@ -48,8 +53,14 @@ export interface DossierMedecin {
   identite: string;
   email: string;
   telephone: string;
+  photoURL: string;
   statut: 'actif' | 'inactif';
   dateCreation: any;
+  sexe: Sexe | null;
+  adresse: string;
+  /** Admin ou superadmin ayant enregistré ce médecin. */
+  createur: Createur | null;
+  authProvider: AuthProvider | null;
   specialite: string[];
   numeroOrdre: string;
   nbPatients: number;

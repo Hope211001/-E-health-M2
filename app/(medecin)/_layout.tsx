@@ -11,6 +11,7 @@ const MEDECIN_MENU: DrawerMenuItem[] = [
   { label: 'Messages', icon: 'chatbubbles', route: '/(conversation)/list' },
   { label: 'Notifications', icon: 'notifications', route: '/(notification)/list' },
   { label: 'Mon profil', icon: 'person', route: APP_ROUTES.MEDECIN.PARAMETRE.PROFIL },
+  { label: 'Changer mon mot de passe', icon: 'key', route: APP_ROUTES.AUTH.CHANGER_MOT_DE_PASSE },
 ];
 
 export default function MedecinLayout() {

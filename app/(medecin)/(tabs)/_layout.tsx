@@ -1,10 +1,28 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useMedicamentsManques } from '../../../hooks/useCompteursNonPris';
 import { Colors } from '@/constants/theme';
+
+/**
+ * Pastille rouge du compteur « médicament non pris ». Sans surcharge, React
+ * Navigation la colore avec la teinte active de l'onglet — verte ici — ce qui
+ * la ferait passer pour une information neutre au lieu d'une alerte.
+ */
+const BADGE_ROUGE = {
+  backgroundColor: Colors.danger,
+  color: Colors.textInverse,
+  fontSize: 10,
+  fontWeight: '800' as const,
+};
 
 export default function MedecinTabsLayout() {
   const insets = useSafeAreaInsets();
+
+  // Oublis de prise signalés par les patients, non encore lus. La pastille est
+  // portée par « Accueil » : c'est l'onglet qui contient la cloche de
+  // notifications, donc là où le médecin ira les consulter.
+  const manques = useMedicamentsManques();
 
   return (
     <Tabs screenOptions={{
@@ -25,6 +43,9 @@ export default function MedecinTabsLayout() {
         options={{
           title: "Accueil",
           tabBarIcon: ({ color }) => <Ionicons name="home" size={22} color={color} />,
+          // Au-delà de 99, le nombre déborderait de la pastille.
+          tabBarBadge: manques > 0 ? (manques > 99 ? '99+' : manques) : undefined,
+          tabBarBadgeStyle: BADGE_ROUGE,
         }}
       />
 

@@ -9,23 +9,69 @@ import { useRouter } from 'expo-router';
 import Toast from 'react-native-toast-message';
 import { z } from 'zod';
 import { authService } from '../../../api/authService';
-import { PasswordInput } from '../../../components/PasswordInput';
+import { InfoIdentifiants } from '../../../components/InfoIdentifiants';
+import PhotoProfilPicker from '../../../components/PhotoProfilPicker';
+import SelecteurSexe from '../../../components/SelecteurSexe';
+import type { Sexe } from '../../../types/collection';
 import { Colors, Radius, Shadows, Spacing } from '@/constants/theme';
 
+type RoleAdministration = 'admin' | 'superadmin';
+
+/**
+ * Les deux rôles créables ici. Le superadmin donne les mêmes droits que celui
+ * qui le crée — d'où l'avertissement affiché : c'est une action sans retour
+ * possible depuis l'application, un superadmin ne pouvant pas être rétrogradé.
+ */
+const ROLES: {
+  cle: RoleAdministration;
+  label: string;
+  description: string;
+  icon: keyof typeof Ionicons.glyphMap;
+}[] = [
+  {
+    cle: 'admin',
+    label: 'Administrateur',
+    description: 'Consulte les comptes et les dossiers, gère les pharmacies de garde.',
+    icon: 'shield-checkmark',
+  },
+  {
+    cle: 'superadmin',
+    label: 'Super administrateur',
+    description: 'Tous les droits : création de comptes et activation/désactivation.',
+    icon: 'key',
+  },
+];
+
+// Pas de champ mot de passe : le backend en génère un et l'envoie par email au
+// titulaire. Le superadmin qui crée le compte ne le connaît donc jamais — ce
+// qui compte particulièrement ici, où le compte créé peut avoir ses propres
+// pouvoirs.
+//
+// `.trim()` avant les contrôles de longueur : une saisie faite d'espaces ne
+// doit pas passer pour une valeur renseignée.
 const schema = z.object({
-  email: z.string().email("Email invalide"),
-  password: z.string().min(8, "8 caractères minimum"),
-  tel: z.string().min(8, "Téléphone invalide"),
-  nom: z.string().min(1, "Nom requis"),
-  prenom: z.string().min(1, "Prénom requis"),
+  email: z.string().trim().email("Email invalide"),
+  tel: z.string().trim().min(8, "Téléphone invalide"),
+  nom: z.string().trim().min(1, "Nom requis"),
+  prenom: z.string().trim().min(1, "Prénom requis"),
+  // Facultative : elle n'entre dans aucun traitement, seulement dans le profil.
+  adresse: z.string().trim().max(200, "Adresse : 200 caractères maximum"),
 });
 
 export default function AdminAddScreen() {
   const router = useRouter();
   const [form, setForm] = useState({
-    email: '', password: '', tel: '', nom: '', prenom: '',
+    email: '', tel: '', nom: '', prenom: '', adresse: '',
   });
+  const [sexe, setSexe] = useState<Sexe | ''>('');
+  const [role, setRole] = useState<RoleAdministration>('admin');
+  const [photo, setPhoto] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const roleChoisi = ROLES.find((r) => r.cle === role)!;
+  const accent = role === 'superadmin' ? Colors.adminAccent : Colors.admin;
+  const accentSombre = role === 'superadmin' ? Colors.adminAccentDark : Colors.adminDark;
+  const accentFond = role === 'superadmin' ? Colors.adminAccentBg : Colors.adminBg;
 
   const update = (k: keyof typeof form) => (v: string) => setForm({ ...form, [k]: v });
 
@@ -42,8 +88,26 @@ export default function AdminAddScreen() {
 
     setLoading(true);
     try {
-      await authService.registerAdmin(form.email, form.password, form.tel, form.nom, form.prenom);
-      Toast.show({ type: 'success', text1: 'Admin créé' });
+      const propre = validation.data;
+      const cree = await authService.registerAdmin(
+        propre.email, propre.tel, propre.nom, propre.prenom,
+        { role, photo, sexe, adresse: propre.adresse },
+      );
+
+      // Le compte existe quoi qu'il arrive : seul l'email a pu échouer.
+      Toast.show(
+        cree.emailEnvoye === false
+          ? {
+            type: 'error',
+            text1: 'Compte créé, email non envoyé',
+            text2: "Utilisez « Renvoyer les identifiants » depuis la liste des comptes.",
+          }
+          : {
+            type: 'success',
+            text1: role === 'superadmin' ? 'Super administrateur créé' : 'Admin créé',
+            text2: `Identifiants envoyés à ${propre.email}`,
+          },
+      );
       router.back();
     } catch (error: any) {
       Toast.show({
@@ -68,23 +132,84 @@ export default function AdminAddScreen() {
             <Ionicons name="arrow-back" size={22} color={Colors.textPrimary} />
           </TouchableOpacity>
           <View style={{ flex: 1 }}>
-            <Text style={styles.title}>Ajouter un admin</Text>
+            <Text style={styles.title}>Ajouter un compte d&apos;administration</Text>
             <Text style={styles.subtitle}>Action réservée au superadmin</Text>
           </View>
         </View>
 
         <View style={styles.card}>
-          <Field label="Prénom" value={form.prenom} onChangeText={update('prenom')} />
-          <Field label="Nom" value={form.nom} onChangeText={update('nom')} />
+          {/* Type de compte : un superadmin peut se donner un pair, ce qui est
+              le seul moyen d'en créer un second après l'amorçage par script. */}
+          <Text style={styles.label}>Type de compte</Text>
+          <View style={styles.roles}>
+            {ROLES.map((r) => {
+              const choisi = r.cle === role;
+              const couleur = r.cle === 'superadmin' ? Colors.adminAccent : Colors.admin;
+              const fond = r.cle === 'superadmin' ? Colors.adminAccentBg : Colors.adminBg;
+              return (
+                <TouchableOpacity
+                  key={r.cle}
+                  style={[
+                    styles.roleRow,
+                    choisi && { backgroundColor: fond, borderColor: couleur },
+                  ]}
+                  onPress={() => setRole(r.cle)}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons
+                    name={choisi ? 'radio-button-on' : 'radio-button-off'}
+                    size={18}
+                    color={choisi ? couleur : Colors.textMuted}
+                  />
+                  <Ionicons name={r.icon} size={18} color={choisi ? couleur : Colors.textMuted} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.roleLabel, choisi && { color: couleur }]}>{r.label}</Text>
+                    <Text style={styles.roleDesc}>{r.description}</Text>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          {role === 'superadmin' && (
+            <View style={styles.avertissement}>
+              <Ionicons name="warning-outline" size={16} color={Colors.warning} />
+              <Text style={styles.avertissementTxt}>
+                Ce compte aura les mêmes pouvoirs que le vôtre, y compris celui de
+                désactiver d&apos;autres comptes. Le rôle ne pourra pas être modifié ensuite.
+              </Text>
+            </View>
+          )}
+
+          <PhotoProfilPicker
+            valeur={photo}
+            onChange={setPhoto}
+            couleur={accent}
+            fond={accentFond}
+            icone={roleChoisi.icon}
+            prenom={form.prenom}
+            nom={form.nom}
+          />
+
+          <Field label="Prénom" value={form.prenom} onChangeText={update('prenom')} autoCapitalize="words" />
+          <Field label="Nom" value={form.nom} onChangeText={update('nom')} autoCapitalize="words" />
+          <Field
+            label="Adresse"
+            value={form.adresse}
+            onChangeText={update('adresse')}
+            autoCapitalize="sentences"
+            placeholder="Facultative — ex : Lot II M 45 bis, Antananarivo"
+          />
+
+          <SelecteurSexe
+            valeur={sexe}
+            onChange={setSexe}
+            couleur={accent}
+            fond={accentFond}
+          />
           <Field label="Email" value={form.email} onChangeText={update('email')} keyboardType="email-address" />
 
-          <Text style={styles.label}>Mot de passe</Text>
-          <PasswordInput
-            containerClassName=""
-            placeholder="••••••••"
-            value={form.password}
-            onChangeText={update('password')}
-          />
+          <InfoIdentifiants couleur={accent} fond={accentFond} />
 
           <Field label="Téléphone" value={form.tel} onChangeText={update('tel')} keyboardType="phone-pad" />
 
@@ -95,14 +220,20 @@ export default function AdminAddScreen() {
             activeOpacity={0.85}
           >
             <LinearGradient
-              colors={[Colors.admin, Colors.adminDark]}
+              colors={[accent, accentSombre]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.primaryBtnGradient}
             >
               {loading
                 ? <ActivityIndicator color="white" />
-                : <Text style={styles.primaryBtnText}>Créer l&apos;admin</Text>}
+                : (
+                  <Text style={styles.primaryBtnText}>
+                    {role === 'superadmin'
+                      ? 'Créer le super administrateur'
+                      : "Créer l'administrateur"}
+                  </Text>
+                )}
             </LinearGradient>
           </TouchableOpacity>
 
@@ -150,6 +281,22 @@ const styles = StyleSheet.create({
     ...Shadows.md,
   },
   label: { color: Colors.textPrimary, fontWeight: '700', marginBottom: 6, marginLeft: 4, fontSize: 14 },
+  roles: { gap: 8, marginBottom: Spacing.md },
+  roleRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    padding: 12, borderRadius: Radius.md,
+    backgroundColor: Colors.surfaceAlt,
+    borderWidth: 1, borderColor: Colors.border,
+  },
+  roleLabel: { fontSize: 14, fontWeight: '700', color: Colors.textPrimary },
+  roleDesc: { fontSize: 12, color: Colors.textSecondary, marginTop: 2 },
+  avertissement: {
+    flexDirection: 'row', gap: 8,
+    padding: 12, borderRadius: Radius.md,
+    backgroundColor: Colors.warningBg,
+    marginBottom: Spacing.md,
+  },
+  avertissementTxt: { flex: 1, fontSize: 12, color: Colors.textSecondary, lineHeight: 17 },
   input: {
     backgroundColor: Colors.surfaceAlt,
     padding: 14, borderRadius: Radius.md,

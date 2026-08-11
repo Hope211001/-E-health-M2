@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import {
   View, Text, TextInput, FlatList, TouchableOpacity, ActivityIndicator,
-  RefreshControl, StyleSheet,
+  RefreshControl, StyleSheet, Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,14 +10,24 @@ import Toast from 'react-native-toast-message';
 import { authService } from '../../../api/authService';
 import { User, UserRole } from '../../../types/collection';
 import { APP_ROUTES } from '@/constants/routes';
-import { Colors, Radius, Shadows, Spacing } from '@/constants/theme';
+import { Colors, Fonts, Radius, Shadows, Spacing } from '@/constants/theme';
+import { idAbrege, iconeOrigine, origineCompte } from '@/utils/roles';
 import AppHeader from '../../../components/AppHeader';
+import AvatarUtilisateur from '../../../components/AvatarUtilisateur';
 import { useAuth } from '../../../hooks/useAuth';
 
 type RoleFiltre = Extract<UserRole, 'medecin' | 'patient' | 'admin'>;
 
 type Onglet = {
+  /** Clé de l'onglet, et rôle listé par défaut. */
   role: RoleFiltre;
+  /**
+   * Rôles réellement listés, quand l'onglet en regroupe plusieurs. Les deux
+   * niveaux d'administration partagent un onglet : un quatrième bouton rendrait
+   * la barre illisible sur mobile, et le badge de la carte suffit à les
+   * distinguer.
+   */
+  roles?: UserRole[];
   label: string;
   icon: keyof typeof Ionicons.glyphMap;
   couleur: string;
@@ -29,8 +39,9 @@ type Onglet = {
   vide: string;
 };
 
-// L'onglet "Admins" n'est proposé qu'au superadmin. Les patients ne sont pas
-// créés ici : c'est le médecin qui les enregistre, d'où l'absence de routeAjout.
+// Les onglets "Admins" et "Superadmins" ne sont proposés qu'au superadmin :
+// l'admin ne peut ni créer ni consulter les comptes de son propre niveau ou
+// au-dessus, le backend appliquant la même règle.
 const ONGLETS: Onglet[] = [
   {
     role: 'medecin', label: 'Médecins', icon: 'medkit',
@@ -47,10 +58,11 @@ const ONGLETS: Onglet[] = [
     vide: 'Aucun patient enregistré.',
   },
   {
-    role: 'admin', label: 'Admins', icon: 'shield-checkmark',
+    role: 'admin', roles: ['admin', 'superadmin'],
+    label: 'Administration', icon: 'shield-checkmark',
     couleur: Colors.adminAccent, fond: Colors.adminAccentBg,
     routeAjout: APP_ROUTES.ADMIN.ADMIN_ADD,
-    vide: 'Aucun administrateur enregistré.',
+    vide: 'Aucun compte d’administration enregistré.',
   },
 ];
 
@@ -103,7 +115,10 @@ export default function UtilisateursScreen() {
 
   const chargerPage = useCallback(async (role: RoleFiltre, q: string, pageDemandee: number) => {
     try {
-      const res = await authService.listUsers(role, { q, page: pageDemandee, limit: TAILLE_PAGE });
+      // Un onglet peut regrouper plusieurs rôles (administration = admin +
+      // superadmin) ; sinon il ne liste que le sien.
+      const filtre = ONGLETS.find((o) => o.role === role)?.roles ?? role;
+      const res = await authService.listUsers(filtre, { q, page: pageDemandee, limit: TAILLE_PAGE });
       // Page 1 = remplacement (changement d'onglet, nouvelle recherche, refresh) ;
       // pages suivantes = ajout à la suite pour le défilement infini.
       setUtilisateurs((prev) => (pageDemandee === 1 ? res.data : [...prev, ...res.data]));
@@ -160,6 +175,51 @@ export default function UtilisateursScreen() {
     router.setParams({ role: undefined });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roleParam, roleActif, onglets, router]);
+
+  /** Comptes dont le renvoi d'identifiants est en cours, pour désactiver le bouton. */
+  const [renvoiEnCours, setRenvoiEnCours] = useState<string | null>(null);
+
+  /**
+   * Renvoie ses identifiants au titulaire d'un compte.
+   *
+   * Confirmation obligatoire : l'opération génère un NOUVEAU mot de passe, donc
+   * invalide l'ancien et déconnecte les sessions ouvertes. Déclenchée par
+   * mégarde sur un compte qui fonctionnait, elle en couperait l'accès jusqu'à
+   * la lecture de l'email.
+   */
+  const handleRenvoi = (utilisateur: User) => {
+    Alert.alert(
+      'Renvoyer les identifiants ?',
+      `Un nouveau mot de passe sera généré et envoyé à ${utilisateur.email}. `
+      + `L'ancien mot de passe cessera de fonctionner immédiatement.`,
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Envoyer',
+          style: 'destructive',
+          onPress: async () => {
+            setRenvoiEnCours(utilisateur.uid);
+            try {
+              await authService.renvoyerIdentifiants(utilisateur.uid);
+              Toast.show({
+                type: 'success',
+                text1: 'Identifiants envoyés',
+                text2: utilisateur.email,
+              });
+            } catch (error: any) {
+              Toast.show({
+                type: 'error',
+                text1: 'Envoi impossible',
+                text2: error.response?.data?.error || 'Vérifiez la configuration email du serveur.',
+              });
+            } finally {
+              setRenvoiEnCours(null);
+            }
+          },
+        },
+      ],
+    );
+  };
 
   const handleToggle = async (uid: string) => {
     try {
@@ -272,15 +332,53 @@ export default function UtilisateursScreen() {
           }
           renderItem={({ item }) => (
             <View style={styles.card}>
-              <View style={[styles.avatar, { backgroundColor: onglet.fond }]}>
-                <Ionicons name={onglet.icon} size={20} color={onglet.couleur} />
-              </View>
+              <AvatarUtilisateur
+                photoURL={item.photoURL}
+                prenom={item.prenom}
+                nom={item.nom}
+                email={item.email}
+                taille={44}
+                couleur={onglet.couleur}
+                fond={onglet.fond}
+                icone={onglet.icon}
+              />
               <View style={{ flex: 1 }}>
                 <Text style={styles.cardTitle} numberOfLines={1}>{nomAffiche(item)}</Text>
                 {nomAffiche(item) !== item.email && (
                   <Text style={styles.cardSub} numberOfLines={1}>{item.email}</Text>
                 )}
-                {item.telephone ? <Text style={styles.cardSub}>{item.telephone}</Text> : null}
+                {/* Téléphone et sexe sur une même ligne : deux informations
+                    courtes, les empiler allongerait la carte pour rien. */}
+                {(item.telephone || item.sexe) ? (
+                  <Text style={styles.cardSub} numberOfLines={1}>
+                    {[
+                      item.telephone,
+                      item.sexe === 'M' ? 'Masculin' : item.sexe === 'F' ? 'Féminin' : null,
+                    ].filter(Boolean).join('  ·  ')}
+                  </Text>
+                ) : null}
+
+                {/* Origine du compte et identifiant technique : l'administration
+                    a besoin de savoir qui a enregistré un compte, et l'uid sert
+                    de référence quand un utilisateur signale un problème. */}
+                <View style={styles.meta}>
+                  <Ionicons name={iconeOrigine(item)} size={11} color={Colors.textMuted} />
+                  <Text style={styles.metaTxt} numberOfLines={1}>{origineCompte(item)}</Text>
+                </View>
+                <View style={styles.meta}>
+                  <Ionicons name="finger-print-outline" size={11} color={Colors.textMuted} />
+                  <Text style={styles.metaId} numberOfLines={1}>{idAbrege(item.uid)}</Text>
+                </View>
+
+                {/* L'onglet Administration mélange les deux niveaux : sans ce
+                    badge, rien ne distinguerait un superadmin d'un admin. */}
+                {item.role === 'superadmin' && (
+                  <View style={styles.roleBadge}>
+                    <Ionicons name="key" size={10} color={Colors.adminAccentDark} />
+                    <Text style={styles.roleBadgeTxt}>Super administrateur</Text>
+                  </View>
+                )}
+
                 <View style={[
                   styles.statusBadge,
                   { backgroundColor: item.statut === 'actif' ? Colors.successBg : Colors.dangerBg },
@@ -311,6 +409,25 @@ export default function UtilisateursScreen() {
                   >
                     <Ionicons name="folder-open-outline" size={14} color={onglet.couleur} />
                     <Text style={[styles.dossierTxt, { color: onglet.couleur }]}>Dossier</Text>
+                  </TouchableOpacity>
+                )}
+
+                {/* Renvoi des identifiants : rattrape un email de création qui
+                    n'est jamais arrivé (SMTP tombé, message en indésirables).
+                    Sans issue pour un compte Google, qui n'a pas de mot de
+                    passe — le bouton est alors masqué plutôt que de produire
+                    une erreur au premier appui. */}
+                {item.authProvider !== 'google' && (
+                  <TouchableOpacity
+                    style={[styles.dossierBtn, { backgroundColor: Colors.infoBg }]}
+                    activeOpacity={0.85}
+                    disabled={renvoiEnCours === item.uid}
+                    onPress={() => handleRenvoi(item)}
+                  >
+                    {renvoiEnCours === item.uid
+                      ? <ActivityIndicator size="small" color={Colors.info} />
+                      : <Ionicons name="mail-outline" size={14} color={Colors.info} />}
+                    <Text style={[styles.dossierTxt, { color: Colors.info }]}>Identifiants</Text>
                   </TouchableOpacity>
                 )}
 
@@ -414,11 +531,21 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     borderWidth: 1, borderColor: Colors.border,
   },
-  avatar: {
-    width: 44, height: 44, borderRadius: 22,
-    alignItems: 'center', justifyContent: 'center',
-  },
   cardTitle: { color: Colors.textPrimary, fontWeight: '700', fontSize: 14 },
+  meta: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
+  metaTxt: { flex: 1, color: Colors.textMuted, fontSize: 11 },
+  metaId: {
+    flex: 1, color: Colors.textMuted, fontSize: 11,
+    fontFamily: Fonts?.mono, letterSpacing: 0.2,
+  },
+  roleBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    marginTop: 6, alignSelf: 'flex-start',
+    paddingHorizontal: 8, paddingVertical: 3,
+    borderRadius: Radius.full,
+    backgroundColor: Colors.adminAccentSoft,
+  },
+  roleBadgeTxt: { fontSize: 10, fontWeight: '700', color: Colors.adminAccentDark },
   cardSub: { color: Colors.textSecondary, fontSize: 13, marginTop: 2 },
   statusBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 4,

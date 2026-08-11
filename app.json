@@ -58,6 +58,14 @@
         {
           "locationWhenInUsePermission": "Mediora utilise votre position pour centrer la carte sur les pharmacies proches de vous."
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Mediora accède à vos photos pour définir la photo de profil du compte.",
+          "cameraPermission": "Mediora utilise l'appareil photo pour prendre la photo de profil du compte.",
+          "microphonePermission": false
+        }
       ]
     ],
     "experiments": {

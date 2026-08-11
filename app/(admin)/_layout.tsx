@@ -20,6 +20,7 @@ export default function AdminLayout() {
       { label: 'Ajouter un admin', icon: 'shield-half' as const, route: APP_ROUTES.ADMIN.ADMIN_ADD },
       { label: 'Pharmacies de garde', icon: 'medical' as const, route: APP_ROUTES.ADMIN.PHARMACIE_GARDE },
     ] : []),
+    { label: 'Changer mon mot de passe', icon: 'key', route: APP_ROUTES.AUTH.CHANGER_MOT_DE_PASSE },
   ];
 
   return (

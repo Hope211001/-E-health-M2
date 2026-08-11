@@ -1,6 +1,28 @@
 import { Timestamp } from 'firebase/firestore';
 export type UserRole = 'medecin' | 'patient' | 'admin' | 'superadmin';
 export type AuthProvider = 'password' | 'google';
+
+/**
+ * Sexe du titulaire du compte. Facultatif : l'API stocke '' quand il n'est pas
+ * renseigné, valeur que portent aussi tous les comptes antérieurs à ce champ.
+ */
+export type Sexe = 'M' | 'F';
+
+/**
+ * Compte à l'origine d'une création, résolu par l'API.
+ * `null` pour les comptes antérieurs à cette traçabilité et pour les
+ * inscriptions Google, qui n'ont pas de créateur.
+ */
+export interface Createur {
+    uid: string;
+    /** Rôle du créateur AU MOMENT de la création, pas son rôle actuel. */
+    role: UserRole | null;
+    /** Nom complet, relu à la demande ; vide si le compte a été supprimé. */
+    identite: string;
+    /** Faux quand le compte créateur n'existe plus. */
+    existe: boolean;
+}
+
 export interface User {
     uid: string;
     email: string;
@@ -11,10 +33,30 @@ export interface User {
     telephone?: string;
     photoURL?: string;
     authProvider?: AuthProvider;
+    /** uid du compte créateur (champ brut stocké en base). */
+    creePar?: string | null;
+    /** Rôle figé du créateur (champ brut stocké en base). */
+    creeParRole?: UserRole | null;
+    /** Bloc résolu renvoyé par l'API — absent des lectures Firestore directes. */
+    createur?: Createur | null;
+    /**
+     * Vrai tant que l'application n'a pas proposé au titulaire de remplacer le
+     * mot de passe reçu par email. Retombe à false qu'il accepte ou qu'il
+     * refuse — la question ne se pose qu'une fois. Absent sur les comptes
+     * antérieurs à cette fonctionnalité et sur les comptes Google.
+     */
+    proposerChangementMotDePasse?: boolean;
+    /**
+     * Faux quand l'email d'identifiants n'a pas pu partir : le compte existe
+     * mais son titulaire ne peut pas encore se connecter. À rattraper avec
+     * « Renvoyer les identifiants ».
+     */
+    identifiantsEnvoyes?: boolean;
+    identifiantsEnvoyesLe?: Timestamp;
     dateCreation: Timestamp;
     statut: 'actif' | 'inactif';
     dateNaissance?: Timestamp;
-    sexe?: 'M' | 'F';
+    sexe?: Sexe | '';
     adresse?: string;
 }
 export interface Medecin extends User {

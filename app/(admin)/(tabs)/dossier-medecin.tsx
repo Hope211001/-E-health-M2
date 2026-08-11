@@ -8,6 +8,7 @@ import { dossierService, DossierMedecin } from '../../../api/dossierService';
 import { PrescriptionsListe, formatDateCourte } from '../../../components/PrescriptionsListe';
 import { APP_ROUTES } from '@/constants/routes';
 import { Colors, Radius, Shadows, Spacing } from '@/constants/theme';
+import { origineCompte } from '@/utils/roles';
 import AppHeader from '../../../components/AppHeader';
 
 type Onglet = 'patients' | 'prescriptions';
@@ -120,9 +121,31 @@ export default function DossierMedecinScreen() {
               <Text style={styles.infoValeur}>{dossier.numeroOrdre}</Text>
             </View>
           ) : null}
+          {dossier.sexe ? (
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Sexe</Text>
+              <Text style={styles.infoValeur}>
+                {dossier.sexe === 'M' ? 'Masculin' : 'Féminin'}
+              </Text>
+            </View>
+          ) : null}
+          {dossier.adresse ? (
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Adresse</Text>
+              <Text style={styles.infoValeur}>{dossier.adresse}</Text>
+            </View>
+          ) : null}
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Inscrit le</Text>
             <Text style={styles.infoValeur}>{formatDateCourte(dossier.dateCreation) ?? '—'}</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Créé par</Text>
+            <Text style={styles.infoValeur}>{origineCompte(dossier)}</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Identifiant</Text>
+            <Text style={styles.infoValeur}>{dossier.uid}</Text>
           </View>
           {dossier.specialite.length > 0 && (
             <>

@@ -9,18 +9,30 @@ import { useRouter } from 'expo-router';
 import Toast from 'react-native-toast-message';
 import { z } from 'zod';
 import { authService } from '../../../api/authService';
-import { User } from '../../../types/collection';
-import { PasswordInput } from '../../../components/PasswordInput';
+import { Sexe, User } from '../../../types/collection';
+import { InfoIdentifiants } from '../../../components/InfoIdentifiants';
+import PhotoProfilPicker from '../../../components/PhotoProfilPicker';
+import SelecteurSexe from '../../../components/SelecteurSexe';
 import { Colors, Radius, Shadows, Spacing } from '@/constants/theme';
 
+// Pas de champ mot de passe : le backend en génère un et l'envoie par email au
+// patient, seul à le connaître.
+//
+// `.trim()` avant les contrôles de longueur : une saisie faite d'espaces ne
+// doit pas passer pour une valeur renseignée.
 const schema = z.object({
-  email: z.string().email("Email : format invalide"),
-  password: z.string().min(8, "Mot de passe : 8 caractères minimum"),
-  tel: z.string().refine(
+  email: z.string().trim().email("Email : format invalide"),
+  tel: z.string().trim().refine(
     (v) => /^0\d{9}$/.test(v.replace(/\s/g, '')),
     "Téléphone : 10 chiffres commençant par 0 (ex: 0341234567)",
   ),
-  medecinId: z.string().min(1, "Médecin traitant : à sélectionner"),
+  // Exigés : un patient identifié seulement par son email est illisible dans
+  // les listes du médecin comme dans les alertes de prise manquée.
+  nom: z.string().trim().min(1, "Nom : requis"),
+  prenom: z.string().trim().min(1, "Prénom : requis"),
+  medecinId: z.string().trim().min(1, "Médecin traitant : à sélectionner"),
+  // Facultative : elle n'entre dans aucun traitement, seulement dans le dossier.
+  adresse: z.string().trim().max(200, "Adresse : 200 caractères maximum"),
 });
 
 /** Nom affichable d'un médecin, avec repli sur l'email. */
@@ -36,8 +48,10 @@ const nomMedecin = (m: User) =>
 export default function PatientAddScreen() {
   const router = useRouter();
   const [form, setForm] = useState({
-    email: '', password: '', tel: '', nom: '', prenom: '', medecinId: '',
+    email: '', tel: '', nom: '', prenom: '', medecinId: '', adresse: '',
   });
+  const [photo, setPhoto] = useState('');
+  const [sexe, setSexe] = useState<Sexe | ''>('');
   const [medecins, setMedecins] = useState<User[]>([]);
   const [chargementMedecins, setChargementMedecins] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -78,12 +92,30 @@ export default function PatientAddScreen() {
 
     setLoading(true);
     try {
-      await authService.registerPatient(form.email, form.password, form.tel, {
-        medecinId: form.medecinId,
-        nom: form.nom,
-        prenom: form.prenom,
+      const propre = validation.data;
+      const cree = await authService.registerPatient(propre.email, propre.tel, {
+        medecinId: propre.medecinId,
+        nom: propre.nom,
+        prenom: propre.prenom,
+        sexe,
+        adresse: propre.adresse,
+        photo,
       });
-      Toast.show({ type: 'success', text1: 'Patient créé' });
+
+      // Le compte existe quoi qu'il arrive : seul l'email a pu échouer.
+      Toast.show(
+        cree.emailEnvoye === false
+          ? {
+            type: 'error',
+            text1: 'Patient créé, email non envoyé',
+            text2: "Utilisez « Renvoyer les identifiants » depuis la liste des comptes.",
+          }
+          : {
+            type: 'success',
+            text1: 'Patient créé',
+            text2: `Identifiants envoyés à ${propre.email}`,
+          },
+      );
       router.back();
     } catch (error: any) {
       Toast.show({
@@ -111,15 +143,19 @@ export default function PatientAddScreen() {
       </View>
 
       <View style={styles.card}>
+        <PhotoProfilPicker
+          valeur={photo}
+          onChange={setPhoto}
+          couleur={Colors.patient}
+          fond={Colors.patientBg}
+          icone="person"
+          prenom={form.prenom}
+          nom={form.nom}
+        />
+
         <Field label="Email" value={form.email} onChangeText={update('email')} keyboardType="email-address" />
 
-        <Text style={styles.label}>Mot de passe</Text>
-        <PasswordInput
-          placeholder="••••••••"
-          value={form.password}
-          onChangeText={update('password')}
-        />
-        <Text style={styles.hint}>8 caractères minimum</Text>
+        <InfoIdentifiants couleur={Colors.patient} fond={Colors.patientBg} />
 
         <Field
           label="Téléphone"
@@ -132,7 +168,7 @@ export default function PatientAddScreen() {
 
         <Field
           label="Prénom"
-          hint="Facultatif — sert à identifier le patient dans les listes"
+          hint="Sert à identifier le patient dans les listes et les alertes"
           value={form.prenom}
           onChangeText={update('prenom')}
           autoCapitalize="words"
@@ -142,6 +178,22 @@ export default function PatientAddScreen() {
           value={form.nom}
           onChangeText={update('nom')}
           autoCapitalize="words"
+        />
+
+        <SelecteurSexe
+          valeur={sexe}
+          onChange={setSexe}
+          couleur={Colors.patient}
+          fond={Colors.patientBg}
+        />
+
+        <Field
+          label="Adresse"
+          hint="Facultative — apparaît dans le dossier du patient"
+          value={form.adresse}
+          onChangeText={update('adresse')}
+          autoCapitalize="sentences"
+          placeholder="Ex : Lot II M 45 bis, Antananarivo"
         />
 
         {/* Médecin traitant : obligatoire ici, alors qu'il est implicite quand

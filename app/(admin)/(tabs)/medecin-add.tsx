@@ -9,25 +9,42 @@ import { useRouter } from 'expo-router';
 import Toast from 'react-native-toast-message';
 import { z } from 'zod';
 import { authService } from '../../../api/authService';
-import { PasswordInput } from '../../../components/PasswordInput';
+import { InfoIdentifiants } from '../../../components/InfoIdentifiants';
+import PhotoProfilPicker from '../../../components/PhotoProfilPicker';
+import SelecteurSexe from '../../../components/SelecteurSexe';
+import type { Sexe } from '../../../types/collection';
 import { Colors, Radius, Shadows, Spacing } from '@/constants/theme';
 
+// Pas de champ mot de passe : le backend en génère un et l'envoie au médecin
+// par email. Personne d'autre que lui ne le connaît, pas même le superadmin
+// qui crée le compte.
+//
+// `.trim()` systématique AVANT les contrôles de longueur : sans lui, un champ
+// rempli d'espaces passe la validation et enregistre une valeur vide.
 const schema = z.object({
-  email: z.string().email("Email : format invalide"),
-  password: z.string().min(8, "Mot de passe : 8 caractères minimum"),
-  tel: z.string().refine(
+  email: z.string().trim().email("Email : format invalide"),
+  tel: z.string().trim().refine(
     (v) => /^0\d{9}$/.test(v.replace(/\s/g, '')),
     "Téléphone : 10 chiffres commençant par 0 (ex: 0341234567)",
   ),
-  ordre: z.string().min(1, "Numéro d'ordre : requis"),
-  specialite: z.string().min(2, "Spécialité : requise (2 caractères min)"),
+  // Exigés : un médecin est désigné par son nom partout dans l'app (listes de
+  // patients, ordonnances, messagerie). Sans état civil, il n'apparaîtrait que
+  // par son email, y compris auprès de ses propres patients.
+  nom: z.string().trim().min(1, "Nom : requis"),
+  prenom: z.string().trim().min(1, "Prénom : requis"),
+  ordre: z.string().trim().min(1, "Numéro d'ordre : requis"),
+  specialite: z.string().trim().min(2, "Spécialité : requise (2 caractères min)"),
+  // Facultative : elle n'entre dans aucun traitement, seulement dans le dossier.
+  adresse: z.string().trim().max(200, "Adresse : 200 caractères maximum"),
 });
 
 export default function MedecinAddScreen() {
   const router = useRouter();
   const [form, setForm] = useState({
-    email: '', password: '', tel: '', ordre: '', specialite: '',
+    email: '', tel: '', nom: '', prenom: '', ordre: '', specialite: '', adresse: '',
   });
+  const [photo, setPhoto] = useState('');
+  const [sexe, setSexe] = useState<Sexe | ''>('');
   const [loading, setLoading] = useState(false);
 
   const update = (k: keyof typeof form) => (v: string) => setForm({ ...form, [k]: v });
@@ -45,12 +62,31 @@ export default function MedecinAddScreen() {
 
     setLoading(true);
     try {
-      await authService.registerMedecin(
-        form.email, form.password, form.tel,
-        form.specialite.split(',').map(s => s.trim()).filter(Boolean),
-        form.ordre,
+      // Valeurs nettoyées par zod, pas la saisie brute.
+      const propre = validation.data;
+      const cree = await authService.registerMedecin(
+        propre.email, propre.tel,
+        propre.specialite.split(',').map(s => s.trim()).filter(Boolean),
+        propre.ordre,
+        { nom: propre.nom, prenom: propre.prenom, photo, sexe, adresse: propre.adresse },
       );
-      Toast.show({ type: 'success', text1: 'Médecin créé' });
+
+      // Le compte existe dans tous les cas ; seul l'acheminement de l'email
+      // peut avoir échoué. L'annoncer, sinon le médecin serait attendu sur une
+      // plateforme dont il n'a jamais reçu le mot de passe.
+      Toast.show(
+        cree.emailEnvoye === false
+          ? {
+            type: 'error',
+            text1: 'Médecin créé, email non envoyé',
+            text2: "Utilisez « Renvoyer les identifiants » depuis la liste des comptes.",
+          }
+          : {
+            type: 'success',
+            text1: 'Médecin créé',
+            text2: `Identifiants envoyés à ${propre.email}`,
+          },
+      );
       router.back();
     } catch (error: any) {
       Toast.show({
@@ -78,15 +114,34 @@ export default function MedecinAddScreen() {
         </View>
 
         <View style={styles.card}>
+          <PhotoProfilPicker
+            valeur={photo}
+            onChange={setPhoto}
+            couleur={Colors.primary}
+            fond={Colors.primaryBg}
+            icone="medkit"
+            prenom={form.prenom}
+            nom={form.nom}
+          />
+
+          <Field
+            label="Prénom"
+            value={form.prenom}
+            onChangeText={update('prenom')}
+            autoCapitalize="words"
+          />
+          <Field
+            label="Nom"
+            value={form.nom}
+            onChangeText={update('nom')}
+            autoCapitalize="words"
+          />
+
+          <SelecteurSexe valeur={sexe} onChange={setSexe} />
+
           <Field label="Email" value={form.email} onChangeText={update('email')} keyboardType="email-address" />
 
-          <Text style={styles.label}>Mot de passe</Text>
-          <PasswordInput
-            placeholder="••••••••"
-            value={form.password}
-            onChangeText={update('password')}
-          />
-          <Text style={styles.hint}>8 caractères minimum</Text>
+          <InfoIdentifiants />
 
           <Field
             label="Téléphone"
@@ -102,6 +157,14 @@ export default function MedecinAddScreen() {
             hint="Séparer par des virgules (ex: cardiologie, généraliste)"
             value={form.specialite}
             onChangeText={update('specialite')}
+          />
+          <Field
+            label="Adresse"
+            hint="Facultative — cabinet ou adresse professionnelle"
+            value={form.adresse}
+            onChangeText={update('adresse')}
+            autoCapitalize="sentences"
+            placeholder="Ex : Lot II M 45 bis, Antananarivo"
           />
 
           <TouchableOpacity

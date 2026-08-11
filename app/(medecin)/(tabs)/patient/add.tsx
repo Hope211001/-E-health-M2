@@ -6,29 +6,45 @@ import Toast from 'react-native-toast-message';
 import { z } from 'zod';
 import { authService } from '../../../../api/authService';
 import { auth } from '../../../../api/firebase';
-import { PasswordInput } from '../../../../components/PasswordInput';
+import { InfoIdentifiants } from '../../../../components/InfoIdentifiants';
+import PhotoProfilPicker from '../../../../components/PhotoProfilPicker';
+import SelecteurSexe from '../../../../components/SelecteurSexe';
+import type { Sexe } from '../../../../types/collection';
+import { Colors } from '@/constants/theme';
 
 // Schéma de validation Zod
+//
+// Ni mot de passe ni confirmation : le backend génère le mot de passe et
+// l'envoie par email au patient. Le médecin n'a donc rien à saisir, ni à
+// transmettre de vive voix.
+//
+// `.trim()` avant les contrôles de longueur : une saisie faite d'espaces ne
+// doit pas passer pour une valeur renseignée.
 const patientSchema = z.object({
-  email: z.string().email({ message: "Email invalide" }),
-  tel: z.string()
+  email: z.string().trim().email({ message: "Email invalide" }),
+  // Exigés : le médecin retrouve ses patients par leur nom dans sa liste et
+  // dans les notifications de prise manquée, jamais par leur email.
+  nom: z.string().trim().min(1, { message: "Le nom est requis" }),
+  prenom: z.string().trim().min(1, { message: "Le prénom est requis" }),
+  tel: z.string().trim()
     .refine((v) => v.replace(/\D/g, '').length >= 9, {
       message: "Numéro trop court (ex: 0341234567)"
     })
     .refine((v) => v.replace(/\D/g, '').length <= 15, {
       message: "Numéro trop long"
     }),
-  pass: z.string().min(6, { message: "Le mot de passe doit faire 6 caractères minimum" }),
-  confirm: z.string()
-}).refine((data) => data.pass === data.confirm, {
-  message: "Les mots de passe ne correspondent pas",
-  path: ["confirm"],
+  // Facultative : elle n'entre dans aucun traitement, seulement dans le dossier.
+  adresse: z.string().trim().max(200, { message: "Adresse : 200 caractères maximum" }),
 });
 
 
 export default function AddPatient() {
   const router = useRouter();
-  const [form, setForm] = useState({ email: '', tel: '', pass: '', confirm: '' });
+  const [form, setForm] = useState({
+    email: '', nom: '', prenom: '', tel: '', adresse: '',
+  });
+  const [photo, setPhoto] = useState('');
+  const [sexe, setSexe] = useState<Sexe | ''>('');
   const [loading, setLoading] = useState(false);
 
   const handleRegister = async () => {
@@ -60,13 +76,33 @@ export default function AddPatient() {
 
     try {
       // 2. Appel au Service (Backend)
-      await authService.registerPatient(form.email, form.pass, form.tel);
-
-      Toast.show({
-        type: 'success',
-        text1: 'Succès',
-        text2: 'Le dossier patient a été créé avec succès'
+      // Le médecin traitant est déduit du token côté serveur : pas de
+      // `medecinId` à transmettre ici, contrairement à l'écran de l'admin.
+      const propre = validation.data;
+      const cree = await authService.registerPatient(propre.email, propre.tel, {
+        nom: propre.nom,
+        prenom: propre.prenom,
+        sexe,
+        adresse: propre.adresse,
+        photo,
       });
+
+      // Le dossier existe dans tous les cas ; seul l'email a pu échouer. Le
+      // dire, sinon le médecin croirait son patient capable de se connecter
+      // alors qu'il n'a jamais reçu de mot de passe.
+      Toast.show(
+        cree.emailEnvoye === false
+          ? {
+            type: 'error',
+            text1: 'Dossier créé, email non envoyé',
+            text2: "Signalez-le à un administrateur pour renvoyer les identifiants.",
+          }
+          : {
+            type: 'success',
+            text1: 'Succès',
+            text2: `Dossier créé — identifiants envoyés à ${propre.email}`,
+          },
+      );
 
       router.back(); // Retour à la liste des patients
     } catch (error: any) {
@@ -95,6 +131,47 @@ export default function AddPatient() {
         </View>
 
         <View className="bg-white p-6 rounded-[32px] shadow-xl shadow-emerald-100 border border-white">
+          <PhotoProfilPicker
+            valeur={photo}
+            onChange={setPhoto}
+            couleur={Colors.primary}
+            fond={Colors.primaryBg}
+            prenom={form.prenom}
+            nom={form.nom}
+          />
+
+          <Text className="text-slate-700 font-bold mb-2 ml-1">Prénom</Text>
+          <TextInput
+            className="bg-slate-50 p-4 rounded-2xl mb-4 border border-slate-100"
+            placeholder="Ex : Hery"
+            value={form.prenom}
+            onChangeText={(v) => setForm({ ...form, prenom: v })}
+            autoCapitalize="words"
+          />
+
+          <Text className="text-slate-700 font-bold mb-2 ml-1">Nom</Text>
+          <TextInput
+            className="bg-slate-50 p-4 rounded-2xl mb-4 border border-slate-100"
+            placeholder="Ex : Rakoto"
+            value={form.nom}
+            onChangeText={(v) => setForm({ ...form, nom: v })}
+            autoCapitalize="words"
+          />
+
+          <SelecteurSexe valeur={sexe} onChange={setSexe} />
+
+          <Text className="text-slate-700 font-bold mb-2 ml-1">Adresse</Text>
+          <TextInput
+            className="bg-slate-50 p-4 rounded-2xl mb-1 border border-slate-100"
+            placeholder="Ex : Lot II M 45 bis, Antananarivo"
+            value={form.adresse}
+            onChangeText={(v) => setForm({ ...form, adresse: v })}
+            autoCapitalize="sentences"
+          />
+          <Text className="text-slate-400 text-xs ml-1 mb-4">
+            Facultative — apparaît dans le dossier du patient
+          </Text>
+
           <Text className="text-slate-700 font-bold mb-2 ml-1">Adresse Email</Text>
           <TextInput
             className="bg-slate-50 p-4 rounded-2xl mb-4 border border-slate-100"
@@ -117,21 +194,7 @@ export default function AddPatient() {
 
           <View className="h-[1px] bg-slate-100 my-4" />
 
-          <Text className="text-slate-700 font-bold mb-2 ml-1">Mot de passe provisoire</Text>
-          <PasswordInput
-            containerClassName="bg-slate-50 rounded-2xl mb-4 border border-slate-100 flex-row items-center"
-            placeholder="••••••••"
-            value={form.pass}
-            onChangeText={(v) => setForm({ ...form, pass: v })}
-          />
-
-          <Text className="text-slate-700 font-bold mb-2 ml-1">Confirmer</Text>
-          <PasswordInput
-            containerClassName="bg-slate-50 rounded-2xl mb-8 border border-slate-100 flex-row items-center"
-            placeholder="••••••••"
-            value={form.confirm}
-            onChangeText={(v) => setForm({ ...form, confirm: v })}
-          />
+          <InfoIdentifiants couleur={Colors.patient} fond={Colors.patientBg} />
 
           <TouchableOpacity
             className="bg-emerald-600 p-5 rounded-2xl items-center shadow-lg shadow-emerald-200"

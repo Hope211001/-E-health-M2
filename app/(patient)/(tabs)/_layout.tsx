@@ -6,11 +6,27 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { requestNotificationPermission } from '../../../api/notificationLocal';
 import { auth, db } from '../../../api/firebase';
+import { useAlertesNonPrises } from '../../../hooks/useCompteursNonPris';
 import { Colors } from '@/constants/theme';
+
+/**
+ * Pastille rouge des compteurs « non pris ». Sans surcharge, React Navigation
+ * la colore avec la teinte active de l'onglet — verte pour le patient — ce qui
+ * la ferait passer pour une information neutre au lieu d'une alerte.
+ */
+const BADGE_ROUGE = {
+  backgroundColor: Colors.danger,
+  color: Colors.textInverse,
+  fontSize: 10,
+  fontWeight: '800' as const,
+};
 
 export default function PatientTabsLayout() {
   const insets = useSafeAreaInsets();
   const [enAttenteCount, setEnAttenteCount] = useState(0);
+
+  // Prises du jour pas encore validées — pastille rouge sur « Rappels ».
+  const nonPrises = useAlertesNonPrises();
 
   useEffect(() => {
     requestNotificationPermission().catch((e) =>
@@ -79,6 +95,9 @@ export default function PatientTabsLayout() {
         options={{
           title: 'Rappels',
           tabBarIcon: ({ color }) => <Ionicons name="alarm" size={22} color={color} />,
+          // Au-delà de 99, le nombre déborderait de la pastille.
+          tabBarBadge: nonPrises > 0 ? (nonPrises > 99 ? '99+' : nonPrises) : undefined,
+          tabBarBadgeStyle: BADGE_ROUGE,
         }}
       />
       <Tabs.Screen

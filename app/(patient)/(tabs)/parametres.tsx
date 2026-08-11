@@ -7,6 +7,8 @@ import { auth, db } from '../../../api/firebase';
 import { doc, getDoc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import Toast from 'react-native-toast-message';
 import AppHeader from '../../../components/AppHeader';
+import CarteProfilCompte from '../../../components/CarteProfilCompte';
+import { Colors } from '@/constants/theme';
 
 const DEFAUT_HORAIRES = { matin: '08:00', midi: '12:00', soir: '20:00' };
 
@@ -109,6 +111,17 @@ export default function Parametres() {
       </View>
 
       <ScrollView className="flex-1" contentContainerStyle={{ padding: 24, paddingBottom: 40 }}>
+
+        {/* Identité du compte — placée en tête : c'est ce que le patient vient
+            vérifier le plus souvent, avant les réglages de rappels. */}
+        <View className="mb-6">
+          <CarteProfilCompte
+            couleur={Colors.patient}
+            fond={Colors.patientBg}
+            icone="person"
+            roleLabel="Patient"
+          />
+        </View>
 
         {/* AVERTISSEMENT IMPORTANT */}
         <View className="bg-amber-50 rounded-2xl p-4 flex-row items-start mb-6 border border-amber-200">

@@ -8,6 +8,7 @@ import { AuthContext } from '../../../context/AuthContext';
 import { authService } from '../../../api/authService';
 import { APP_ROUTES } from '@/constants/routes';
 import AppHeader from '../../../components/AppHeader';
+import AvatarUtilisateur from '../../../components/AvatarUtilisateur';
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -80,9 +81,27 @@ export default function AdminDashboard() {
                 {user?.prenom || user?.nom || user?.email || 'Admin'}
               </Text>
             </View>
-            <View className="bg-white/20 w-14 h-14 rounded-2xl items-center justify-center border border-white/30">
-              <Ionicons name={isSuperadmin ? 'shield-checkmark' : 'shield'} size={26} color="white" />
-            </View>
+            {/* Accès au profil : l'espace admin n'a pas d'onglet Paramètres,
+                l'avatar est le point d'entrée attendu pour son propre compte. */}
+            <TouchableOpacity
+              onPress={() => router.push(APP_ROUTES.ADMIN.PROFIL as Href)}
+              activeOpacity={0.8}
+              accessibilityLabel="Mon profil"
+            >
+              {user?.photoURL ? (
+                <AvatarUtilisateur
+                  photoURL={user.photoURL}
+                  prenom={user.prenom}
+                  nom={user.nom}
+                  email={user.email}
+                  taille={56}
+                />
+              ) : (
+                <View className="bg-white/20 w-14 h-14 rounded-2xl items-center justify-center border border-white/30">
+                  <Ionicons name={isSuperadmin ? 'shield-checkmark' : 'shield'} size={26} color="white" />
+                </View>
+              )}
+            </TouchableOpacity>
           </View>
 
           <View className="bg-violet-200 self-start px-4 py-2 rounded-full shadow-sm">

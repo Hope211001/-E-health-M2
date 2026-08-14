@@ -10,6 +10,7 @@ import { patientService } from '../../../../api/patientService';
 import { prescriptionService } from '../../../../api/prescriptionService';
 import { Patient } from '../../../../types/collection';
 import { APP_ROUTES } from '@/constants/routes';
+import { libelleAge } from '@/utils/dateNaissance';
 
 export default function AjoutOrdonnance() {
   const router = useRouter();
@@ -90,7 +91,7 @@ export default function AjoutOrdonnance() {
 
       Toast.show({ type: 'success', text1: 'Ordonnance créée' });
       router.replace(APP_ROUTES.MEDECIN.HOME);
-    } catch (e) {
+    } catch {
       Toast.show({ type: 'error', text1: 'Erreur de sauvegarde' });
     } finally {
       setLoading(false);
@@ -134,9 +135,25 @@ export default function AjoutOrdonnance() {
           ) : (
             <View className="bg-emerald-600 p-6 rounded-[28px] mb-6 flex-row items-center shadow-lg shadow-emerald-200">
               <Ionicons name="person-circle" size={44} color="white" />
-              <View className="ml-4">
+              <View className="ml-4 flex-1">
                 <Text className="text-emerald-100 text-[10px] font-bold uppercase tracking-widest">Patient sélectionné</Text>
-                <Text className="text-white text-lg font-black">{selectedPatient.numeroPatient}</Text>
+                {/* Le nom en premier : le numéro seul ne permet pas de vérifier
+                    qu'on prescrit au bon patient. */}
+                <Text className="text-white text-lg font-black" numberOfLines={1}>
+                  {`${selectedPatient.prenom || ''} ${selectedPatient.nom || ''}`.trim()
+                    || selectedPatient.numeroPatient
+                    || selectedPatient.email}
+                </Text>
+                {/* Sexe et âge sous les yeux au moment de choisir les doses :
+                    c'est ici qu'ils servent, pas seulement dans la fiche. */}
+                <Text className="text-emerald-100 text-xs font-bold mt-0.5" numberOfLines={1}>
+                  {[
+                    selectedPatient.numeroPatient,
+                    selectedPatient.sexe === 'M' ? 'Masculin'
+                      : selectedPatient.sexe === 'F' ? 'Féminin' : null,
+                    libelleAge(selectedPatient.dateNaissance),
+                  ].filter(Boolean).join('  ·  ')}
+                </Text>
               </View>
             </View>
           )}

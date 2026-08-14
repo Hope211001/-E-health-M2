@@ -29,6 +29,13 @@ export type OrdonnanceAImprimer = {
   medicaments?: Medicament[];
   /** Libellé du patient (n° patient, nom ou email) */
   patientLabel?: string;
+  /**
+   * Sexe et âge du patient (« Masculin · 32 ans »). Une ordonnance papier les
+   * porte habituellement : ce sont eux qui permettent au pharmacien de repérer
+   * une posologie incohérente avec le patient. Absents quand le patient ne les
+   * a pas renseignés — la ligne disparaît alors du document.
+   */
+  patientDetail?: string;
   /** Nom du médecin prescripteur */
   medecinLabel?: string;
 };
@@ -113,6 +120,7 @@ export const buildOrdonnanceHtml = (ord: OrdonnanceAImprimer): string => {
           letter-spacing: 1px; color: #94a3b8; margin-bottom: 4px;
         }
         .valeur { font-size: 13px; font-weight: 600; }
+        .sous-valeur { font-size: 11px; color: #475569; margin-top: 3px; }
         .diagnostic { font-size: 13px; font-style: italic; color: #334155; line-height: 1.6; }
         table { width: 100%; border-collapse: collapse; margin-top: 6px; }
         th {
@@ -150,6 +158,7 @@ export const buildOrdonnanceHtml = (ord: OrdonnanceAImprimer): string => {
         <div class="bloc">
           <div class="label">Patient</div>
           <div class="valeur">${escapeHtml(ord.patientLabel) || 'Non renseigné'}</div>
+          ${ord.patientDetail ? `<div class="sous-valeur">${escapeHtml(ord.patientDetail)}</div>` : ''}
         </div>
         <div class="bloc">
           <div class="label">Médecin prescripteur</div>

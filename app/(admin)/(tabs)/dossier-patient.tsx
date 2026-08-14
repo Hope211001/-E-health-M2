@@ -9,7 +9,9 @@ import { PrescriptionsListe, formatDateCourte } from '../../../components/Prescr
 import { APP_ROUTES } from '@/constants/routes';
 import { Colors, Radius, Spacing } from '@/constants/theme';
 import { origineCompte } from '@/utils/roles';
+import { dateNaissanceAvecAge } from '@/utils/dateNaissance';
 import AppHeader from '../../../components/AppHeader';
+import AvatarUtilisateur from '../../../components/AvatarUtilisateur';
 
 /** Ligne « libellé / valeur » des cartes d'information. */
 function Info({ label, valeur }: { label: string; valeur?: string | null }) {
@@ -103,9 +105,17 @@ export default function DossierPatientScreen() {
           <TouchableOpacity onPress={() => router.back()} hitSlop={10} style={styles.backBtn}>
             <Ionicons name="chevron-back" size={20} color={Colors.textSecondary} />
           </TouchableOpacity>
-          <View style={styles.avatar}>
-            <Ionicons name="person" size={22} color={Colors.patient} />
-          </View>
+          {/* La photo est chargée ICI et nulle part ailleurs : une seule requête
+              pour un écran ouvert à la demande, là où les listes en auraient
+              lancé une par ligne. */}
+          <AvatarUtilisateur
+            photoURL={dossier.photoURL}
+            email={dossier.email}
+            taille={44}
+            couleur={Colors.patient}
+            fond={Colors.patientBg}
+            icone="person"
+          />
           <View style={{ flex: 1 }}>
             <Text style={styles.titre} numberOfLines={1}>{dossier.identite}</Text>
             <Text style={styles.sousTitre} numberOfLines={1}>
@@ -149,7 +159,10 @@ export default function DossierPatientScreen() {
           <Info label="Email" valeur={dossier.email} />
           <Info label="Téléphone" valeur={dossier.telephone} />
           <Info label="Sexe" valeur={dossier.sexe === 'M' ? 'Masculin' : dossier.sexe === 'F' ? 'Féminin' : null} />
-          <Info label="Naissance" valeur={formatDateCourte(dossier.dateNaissance)} />
+          {/* `dateNaissanceAvecAge` et non `formatDateCourte` : la date est une
+              chaîne 'AAAA-MM-JJ' que `new Date()` interpréterait en UTC, et
+              c'est l'âge qui intéresse le lecteur du dossier. */}
+          <Info label="Naissance" valeur={dateNaissanceAvecAge(dossier.dateNaissance)} />
           <Info label="Adresse" valeur={dossier.adresse} />
           <Info label="Inscrit le" valeur={formatDateCourte(dossier.dateCreation)} />
           <Info label="Créé par" valeur={origineCompte(dossier)} />

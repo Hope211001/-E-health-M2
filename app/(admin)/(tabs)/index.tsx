@@ -201,21 +201,21 @@ export default function AdminDashboard() {
             </TouchableOpacity>
           )}
 
-          {isSuperadmin && (
-            <TouchableOpacity
-              onPress={() => router.push(APP_ROUTES.ADMIN.PHARMACIE_GARDE as Href)}
-              className="bg-cyan-600 p-6 rounded-[35px] flex-row items-center shadow-xl shadow-cyan-100"
-            >
-              <View className="bg-white/20 w-16 h-16 rounded-2xl items-center justify-center mr-4">
-                <Ionicons name="medical" size={30} color="white" />
-              </View>
-              <View className="flex-1">
-                <Text className="text-white font-black text-lg">Pharmacies de garde</Text>
-                <Text className="text-cyan-100 text-xs font-bold mt-0.5">Publications visibles par les patients</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={22} color="white" />
-            </TouchableOpacity>
-          )}
+          {/* Ouvert aux admins comme aux superadmins : les routes backend
+              `/pharmacie-garde` et `/ocr` acceptent les deux rôles. */}
+          <TouchableOpacity
+            onPress={() => router.push(APP_ROUTES.ADMIN.PHARMACIE_GARDE as Href)}
+            className="bg-cyan-600 p-6 rounded-[35px] flex-row items-center shadow-xl shadow-cyan-100"
+          >
+            <View className="bg-white/20 w-16 h-16 rounded-2xl items-center justify-center mr-4">
+              <Ionicons name="medical" size={30} color="white" />
+            </View>
+            <View className="flex-1">
+              <Text className="text-white font-black text-lg">Pharmacies de garde</Text>
+              <Text className="text-cyan-100 text-xs font-bold mt-0.5">Publications visibles par les patients</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={22} color="white" />
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </SafeAreaView>

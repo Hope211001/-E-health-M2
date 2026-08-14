@@ -12,8 +12,10 @@ import { authService } from '../../../api/authService';
 import { InfoIdentifiants } from '../../../components/InfoIdentifiants';
 import PhotoProfilPicker from '../../../components/PhotoProfilPicker';
 import SelecteurSexe from '../../../components/SelecteurSexe';
+import ChampDateNaissance from '../../../components/ChampDateNaissance';
 import type { Sexe } from '../../../types/collection';
 import { Colors, Radius, Shadows, Spacing } from '@/constants/theme';
+import { versISO } from '@/utils/dateNaissance';
 
 // Pas de champ mot de passe : le backend en génère un et l'envoie au médecin
 // par email. Personne d'autre que lui ne le connaît, pas même le superadmin
@@ -45,6 +47,9 @@ export default function MedecinAddScreen() {
   });
   const [photo, setPhoto] = useState('');
   const [sexe, setSexe] = useState<Sexe | ''>('');
+  // Hors du formulaire zod : la saisie 'JJ/MM/AAAA' n'est convertie qu'à
+  // l'envoi, une date en cours de frappe n'ayant pas de forme ISO.
+  const [naissance, setNaissance] = useState('');
   const [loading, setLoading] = useState(false);
 
   const update = (k: keyof typeof form) => (v: string) => setForm({ ...form, [k]: v });
@@ -60,6 +65,16 @@ export default function MedecinAddScreen() {
       return;
     }
 
+    const dateNaissance = versISO(naissance);
+    if (dateNaissance === null) {
+      Toast.show({
+        type: 'error',
+        text1: 'Date de naissance invalide',
+        text2: 'Format attendu : JJ/MM/AAAA',
+      });
+      return;
+    }
+
     setLoading(true);
     try {
       // Valeurs nettoyées par zod, pas la saisie brute.
@@ -68,7 +83,10 @@ export default function MedecinAddScreen() {
         propre.email, propre.tel,
         propre.specialite.split(',').map(s => s.trim()).filter(Boolean),
         propre.ordre,
-        { nom: propre.nom, prenom: propre.prenom, photo, sexe, adresse: propre.adresse },
+        {
+          nom: propre.nom, prenom: propre.prenom, photo, sexe,
+          dateNaissance, adresse: propre.adresse,
+        },
       );
 
       // Le compte existe dans tous les cas ; seul l'acheminement de l'email
@@ -138,6 +156,8 @@ export default function MedecinAddScreen() {
           />
 
           <SelecteurSexe valeur={sexe} onChange={setSexe} />
+
+          <ChampDateNaissance valeur={naissance} onChange={setNaissance} />
 
           <Field label="Email" value={form.email} onChangeText={update('email')} keyboardType="email-address" />
 

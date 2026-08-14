@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -41,7 +41,7 @@ export default function Rappels() {
         prev.map(a => a.id === alerteId ? { ...a, statut: 'pris', prisLe: new Date().toISOString() } : a)
       );
       Toast.show({ type: 'success', text1: 'Médicament pris', text2: 'Bien noté !' });
-    } catch (error) {
+    } catch {
       Toast.show({ type: 'error', text1: 'Erreur', text2: 'Impossible de valider' });
     } finally {
       setMarkingId(null);

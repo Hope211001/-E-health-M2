@@ -13,7 +13,9 @@ import { Sexe, User } from '../../../types/collection';
 import { InfoIdentifiants } from '../../../components/InfoIdentifiants';
 import PhotoProfilPicker from '../../../components/PhotoProfilPicker';
 import SelecteurSexe from '../../../components/SelecteurSexe';
+import ChampDateNaissance from '../../../components/ChampDateNaissance';
 import { Colors, Radius, Shadows, Spacing } from '@/constants/theme';
+import { versISO } from '@/utils/dateNaissance';
 
 // Pas de champ mot de passe : le backend en génère un et l'envoie par email au
 // patient, seul à le connaître.
@@ -52,6 +54,9 @@ export default function PatientAddScreen() {
   });
   const [photo, setPhoto] = useState('');
   const [sexe, setSexe] = useState<Sexe | ''>('');
+  // Hors du formulaire zod : la saisie 'JJ/MM/AAAA' n'est convertie qu'à
+  // l'envoi, une date en cours de frappe n'ayant pas de forme ISO.
+  const [naissance, setNaissance] = useState('');
   const [medecins, setMedecins] = useState<User[]>([]);
   const [chargementMedecins, setChargementMedecins] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -90,6 +95,16 @@ export default function PatientAddScreen() {
       return;
     }
 
+    const dateNaissance = versISO(naissance);
+    if (dateNaissance === null) {
+      Toast.show({
+        type: 'error',
+        text1: 'Date de naissance invalide',
+        text2: 'Format attendu : JJ/MM/AAAA',
+      });
+      return;
+    }
+
     setLoading(true);
     try {
       const propre = validation.data;
@@ -98,6 +113,7 @@ export default function PatientAddScreen() {
         nom: propre.nom,
         prenom: propre.prenom,
         sexe,
+        dateNaissance,
         adresse: propre.adresse,
         photo,
       });
@@ -185,6 +201,12 @@ export default function PatientAddScreen() {
           onChange={setSexe}
           couleur={Colors.patient}
           fond={Colors.patientBg}
+        />
+
+        <ChampDateNaissance
+          valeur={naissance}
+          onChange={setNaissance}
+          couleur={Colors.patient}
         />
 
         <Field

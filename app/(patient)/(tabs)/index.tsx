@@ -6,7 +6,6 @@ import { useRouter, Href, useFocusEffect } from 'expo-router';
 import { auth, db } from '../../../api/firebase';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { APP_ROUTES } from '../../../constants/routes';
-import LogoutButton from '../../../components/bouton/logoutBouton';
 import { notificationService } from '../../../api/notificationService';
 import AppHeader from '../../../components/AppHeader';
 
@@ -167,11 +166,6 @@ export default function PatientDashboard() {
             </View>
             <Ionicons name="chevron-forward" size={22} color="white" />
           </TouchableOpacity>
-        </View>
-
-        {/* --- LOGOUT --- */}
-        <View className="px-6 mt-4">
-          <LogoutButton />
         </View>
 
       </ScrollView>

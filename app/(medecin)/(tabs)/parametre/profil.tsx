@@ -1,24 +1,13 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import { authService } from '../../../../api/authService';
 import AppHeader from '../../../../components/AppHeader';
 import { AppScrollView } from '../../../../components/AppScrollView';
 import CarteProfilCompte from '../../../../components/CarteProfilCompte';
-import { Colors, Radius, Spacing } from '@/constants/theme';
+import { Colors, Spacing } from '@/constants/theme';
 
 export default function ProfilScreen() {
-  const router = useRouter();
-
-  const handleLogout = async () => {
-    // Passe par le service : il révoque aussi le token côté serveur, alors
-    // qu'un signOut seul laisserait la session utilisable jusqu'à expiration.
-    await authService.logout();
-    router.replace('/');
-  };
-
   return (
     <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
       <AppHeader subtitle="Mon profil" />
@@ -40,11 +29,6 @@ export default function ProfilScreen() {
             ordonnances et dans la messagerie.
           </Text>
         </View>
-
-        <TouchableOpacity style={styles.deconnexion} onPress={handleLogout} activeOpacity={0.85}>
-          <Ionicons name="log-out-outline" size={18} color={Colors.danger} />
-          <Text style={styles.deconnexionTxt}>Se déconnecter</Text>
-        </TouchableOpacity>
       </AppScrollView>
     </SafeAreaView>
   );
@@ -59,13 +43,4 @@ const styles = StyleSheet.create({
     marginTop: Spacing.lg, paddingHorizontal: 4,
   },
   infoTxt: { flex: 1, fontSize: 12, color: Colors.textMuted, lineHeight: 17 },
-  deconnexion: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-    marginTop: Spacing['2xl'],
-    paddingVertical: 14,
-    borderRadius: Radius.md,
-    backgroundColor: Colors.dangerBg,
-    borderWidth: 1, borderColor: Colors.danger,
-  },
-  deconnexionTxt: { color: Colors.danger, fontWeight: '700', fontSize: 15 },
 });

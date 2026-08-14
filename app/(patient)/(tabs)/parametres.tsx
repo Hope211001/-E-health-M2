@@ -79,15 +79,6 @@ export default function Parametres() {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await auth.signOut();
-      router.replace('/');
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
   if (loading) {
     return (
       <View className="flex-1 justify-center items-center bg-white">
@@ -220,17 +211,6 @@ export default function Parametres() {
             ))
           )}
         </View>
-
-        {/* Déconnexion */}
-        <TouchableOpacity
-          className="bg-red-50 rounded-2xl py-4 items-center border border-red-200"
-          onPress={handleLogout}
-        >
-          <View className="flex-row items-center">
-            <Ionicons name="log-out" size={18} color="#EF4444" />
-            <Text className="text-red-600 font-bold text-sm ml-2">Se déconnecter</Text>
-          </View>
-        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );

@@ -18,11 +18,13 @@ import { z } from 'zod';
 import AvatarUtilisateur from './AvatarUtilisateur';
 import PhotoProfilPicker from './PhotoProfilPicker';
 import SelecteurSexe from './SelecteurSexe';
+import ChampDateNaissance from './ChampDateNaissance';
 import type { Sexe } from '@/types/collection';
 import { authService } from '@/api/authService';
 import { useAuth } from '@/hooks/useAuth';
 import { Colors, Fonts, Radius, Shadows, Spacing } from '@/constants/theme';
 import { iconeOrigine, origineCompte } from '@/utils/roles';
+import { dateNaissanceAvecAge, depuisISO, versISO } from '@/utils/dateNaissance';
 
 const schema = z.object({
   // `.trim()` AVANT `.min(1)` : sans lui, une suite d'espaces passe la
@@ -61,6 +63,10 @@ export default function CarteProfilCompte({
   const [form, setForm] = useState({ nom: '', prenom: '', tel: '', adresse: '' });
   const [photo, setPhoto] = useState('');
   const [sexe, setSexe] = useState<Sexe | ''>('');
+  // Conservée sous sa forme saisie ('JJ/MM/AAAA') et convertie à l'envoi : la
+  // stocker déjà convertie viderait le champ à chaque frappe intermédiaire,
+  // une date partielle n'ayant pas de forme ISO.
+  const [naissance, setNaissance] = useState('');
 
   if (!user) {
     return (
@@ -82,6 +88,7 @@ export default function CarteProfilCompte({
       adresse: user.adresse || '',
     });
     setSexe(user.sexe || '');
+    setNaissance(depuisISO(user.dateNaissance));
     setPhoto(user.photoURL || '');
     setEdition(true);
   };
@@ -97,6 +104,18 @@ export default function CarteProfilCompte({
       return;
     }
 
+    // Contrôlée à part : zod valide le formulaire texte, alors que la date est
+    // tenue dans son propre état pour rester affichable pendant la frappe.
+    const dateNaissance = versISO(naissance);
+    if (dateNaissance === null) {
+      Toast.show({
+        type: 'error',
+        text1: 'Date de naissance invalide',
+        text2: 'Format attendu : JJ/MM/AAAA',
+      });
+      return;
+    }
+
     setEnregistrement(true);
     try {
       // `validation.data` et non `form` : ce sont les valeurs nettoyées par
@@ -106,6 +125,7 @@ export default function CarteProfilCompte({
         prenom: validation.data.prenom,
         tel: validation.data.tel,
         sexe,
+        dateNaissance,
         adresse: validation.data.adresse,
         // Envoyée seulement si elle a changé : réexpédier l'URL actuelle
         // ferait un aller-retour inutile, et l'omettre la laisse en place.
@@ -150,6 +170,13 @@ export default function CarteProfilCompte({
             {user.sexe ? (
               <Text style={styles.detail}>
                 {user.sexe === 'M' ? 'Masculin' : 'Féminin'}
+              </Text>
+            ) : null}
+            {/* Date ET âge : l'âge seul est la valeur utile au quotidien, mais
+                sans la date on ne peut pas repérer une saisie erronée. */}
+            {dateNaissanceAvecAge(user.dateNaissance) ? (
+              <Text style={styles.detail}>
+                {dateNaissanceAvecAge(user.dateNaissance)}
               </Text>
             ) : null}
             {user.adresse ? (
@@ -249,6 +276,13 @@ export default function CarteProfilCompte({
         onChange={setSexe}
         couleur={couleur}
         fond={fond}
+        disabled={enregistrement}
+      />
+
+      <ChampDateNaissance
+        valeur={naissance}
+        onChange={setNaissance}
+        couleur={couleur}
         disabled={enregistrement}
       />
 

@@ -9,8 +9,10 @@ import { auth } from '../../../../api/firebase';
 import { InfoIdentifiants } from '../../../../components/InfoIdentifiants';
 import PhotoProfilPicker from '../../../../components/PhotoProfilPicker';
 import SelecteurSexe from '../../../../components/SelecteurSexe';
+import ChampDateNaissance from '../../../../components/ChampDateNaissance';
 import type { Sexe } from '../../../../types/collection';
 import { Colors } from '@/constants/theme';
+import { versISO } from '@/utils/dateNaissance';
 
 // Schéma de validation Zod
 //
@@ -45,6 +47,9 @@ export default function AddPatient() {
   });
   const [photo, setPhoto] = useState('');
   const [sexe, setSexe] = useState<Sexe | ''>('');
+  // Tenue hors du formulaire zod : la saisie 'JJ/MM/AAAA' est convertie à
+  // l'envoi seulement, une date en cours de frappe n'ayant pas de forme ISO.
+  const [naissance, setNaissance] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleRegister = async () => {
@@ -71,6 +76,16 @@ export default function AddPatient() {
       return;
     }
 
+    const dateNaissance = versISO(naissance);
+    if (dateNaissance === null) {
+      Toast.show({
+        type: 'error',
+        text1: 'Date de naissance invalide',
+        text2: 'Format attendu : JJ/MM/AAAA',
+      });
+      return;
+    }
+
     setLoading(true);
 
 
@@ -83,6 +98,7 @@ export default function AddPatient() {
         nom: propre.nom,
         prenom: propre.prenom,
         sexe,
+        dateNaissance,
         adresse: propre.adresse,
         photo,
       });
@@ -159,6 +175,8 @@ export default function AddPatient() {
           />
 
           <SelecteurSexe valeur={sexe} onChange={setSexe} />
+
+          <ChampDateNaissance valeur={naissance} onChange={setNaissance} />
 
           <Text className="text-slate-700 font-bold mb-2 ml-1">Adresse</Text>
           <TextInput

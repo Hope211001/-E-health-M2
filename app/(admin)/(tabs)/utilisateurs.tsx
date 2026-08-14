@@ -12,6 +12,7 @@ import { User, UserRole } from '../../../types/collection';
 import { APP_ROUTES } from '@/constants/routes';
 import { Colors, Fonts, Radius, Shadows, Spacing } from '@/constants/theme';
 import { idAbrege, iconeOrigine, origineCompte } from '@/utils/roles';
+import { libelleAge } from '@/utils/dateNaissance';
 import AppHeader from '../../../components/AppHeader';
 import AvatarUtilisateur from '../../../components/AvatarUtilisateur';
 import { useAuth } from '../../../hooks/useAuth';
@@ -36,6 +37,12 @@ type Onglet = {
   routeAjout?: string;
   /** Écran de dossier, quand ce type de compte en a un. */
   routeDossier?: string;
+  /**
+   * Écran de détail des comptes d'administration, qui n'ont pas de dossier :
+   * ni file de patients ni ordonnances à y montrer. C'est aussi lui qui porte
+   * la photo, que la liste ne charge pas.
+   */
+  routeDetail?: string;
   vide: string;
 };
 
@@ -62,6 +69,7 @@ const ONGLETS: Onglet[] = [
     label: 'Administration', icon: 'shield-checkmark',
     couleur: Colors.adminAccent, fond: Colors.adminAccentBg,
     routeAjout: APP_ROUTES.ADMIN.ADMIN_ADD,
+    routeDetail: APP_ROUTES.ADMIN.COMPTE_DETAIL,
     vide: 'Aucun compte d’administration enregistré.',
   },
 ];
@@ -332,8 +340,12 @@ export default function UtilisateursScreen() {
           }
           renderItem={({ item }) => (
             <View style={styles.card}>
+              {/* Volontairement SANS `photoURL` : la liste est paginée et
+                  défile, chaque ligne lancerait un téléchargement Cloudinary
+                  pour une vignette de 44 px. Les initiales identifient tout
+                  aussi bien sans requête ; la photo est chargée une seule fois,
+                  sur l'écran de détail. */}
               <AvatarUtilisateur
-                photoURL={item.photoURL}
                 prenom={item.prenom}
                 nom={item.nom}
                 email={item.email}
@@ -347,13 +359,16 @@ export default function UtilisateursScreen() {
                 {nomAffiche(item) !== item.email && (
                   <Text style={styles.cardSub} numberOfLines={1}>{item.email}</Text>
                 )}
-                {/* Téléphone et sexe sur une même ligne : deux informations
-                    courtes, les empiler allongerait la carte pour rien. */}
-                {(item.telephone || item.sexe) ? (
+                {/* Téléphone, sexe et âge sur une même ligne : trois informations
+                    courtes, les empiler allongerait la carte pour rien. L'âge
+                    plutôt que la date de naissance — c'est ce qu'on lit d'un
+                    coup d'œil dans une liste, la date reste dans le dossier. */}
+                {(item.telephone || item.sexe || libelleAge(item.dateNaissance)) ? (
                   <Text style={styles.cardSub} numberOfLines={1}>
                     {[
                       item.telephone,
                       item.sexe === 'M' ? 'Masculin' : item.sexe === 'F' ? 'Féminin' : null,
+                      libelleAge(item.dateNaissance),
                     ].filter(Boolean).join('  ·  ')}
                   </Text>
                 ) : null}
@@ -409,6 +424,23 @@ export default function UtilisateursScreen() {
                   >
                     <Ionicons name="folder-open-outline" size={14} color={onglet.couleur} />
                     <Text style={[styles.dossierTxt, { color: onglet.couleur }]}>Dossier</Text>
+                  </TouchableOpacity>
+                )}
+
+                {/* Comptes d'administration : pas de dossier, mais une fiche —
+                    c'est là que la photo se charge, la liste ne l'affichant
+                    volontairement pas. */}
+                {onglet.routeDetail && (
+                  <TouchableOpacity
+                    style={[styles.dossierBtn, { backgroundColor: onglet.fond }]}
+                    activeOpacity={0.85}
+                    onPress={() => router.push({
+                      pathname: onglet.routeDetail!,
+                      params: { id: item.uid },
+                    } as Href)}
+                  >
+                    <Ionicons name="eye-outline" size={14} color={onglet.couleur} />
+                    <Text style={[styles.dossierTxt, { color: onglet.couleur }]}>Détail</Text>
                   </TouchableOpacity>
                 )}
 

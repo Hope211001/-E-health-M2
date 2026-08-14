@@ -13,7 +13,7 @@ import {
 } from '../../api/notificationLocal';
 import Toast from 'react-native-toast-message';
 import { imprimerOrdonnance, partagerOrdonnancePdf } from '@/utils/printOrdonnance';
-import { getMedecinLabel, getPatientLabel } from '@/utils/ordonnanceLabels';
+import { getMedecinLabel, getPatientEntete } from '@/utils/ordonnanceLabels';
 
 const DEFAUT_HORAIRES = { matin: '08:00', midi: '12:00', soir: '20:00' };
 
@@ -78,11 +78,16 @@ export default function DetailPrescription() {
   const handleExport = async (mode: 'print' | 'share') => {
     try {
       setPrinting(true);
-      const [patientLabel, medecinLabel] = await Promise.all([
-        getPatientLabel(prescription.patientId || auth.currentUser?.uid),
+      const [patient, medecinLabel] = await Promise.all([
+        getPatientEntete(prescription.patientId || auth.currentUser?.uid),
         getMedecinLabel(prescription.medecinId),
       ]);
-      const document = { ...prescription, patientLabel, medecinLabel };
+      const document = {
+        ...prescription,
+        patientLabel: patient.label,
+        patientDetail: patient.details,
+        medecinLabel,
+      };
       await (mode === 'print' ? imprimerOrdonnance(document) : partagerOrdonnancePdf(document));
     } catch (error: any) {
       // L'annulation du dialogue système lève aussi une erreur : on reste discret
@@ -125,7 +130,7 @@ export default function DetailPrescription() {
 
       setEditingHoraires(false);
       Toast.show({ type: 'success', text1: 'Horaires sauvegardés pour cette ordonnance' });
-    } catch (e) {
+    } catch {
       Toast.show({ type: 'error', text1: 'Erreur', text2: 'Impossible de sauvegarder' });
     } finally {
       setSavingHoraires(false);

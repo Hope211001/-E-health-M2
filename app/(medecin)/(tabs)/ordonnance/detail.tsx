@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { prescriptionService } from '../../../../api/prescriptionService';
 import Toast from 'react-native-toast-message';
 import { imprimerOrdonnance, partagerOrdonnancePdf } from '@/utils/printOrdonnance';
-import { getMedecinLabel, getPatientLabel } from '@/utils/ordonnanceLabels';
+import { getMedecinLabel, getPatientEntete } from '@/utils/ordonnanceLabels';
 
 export default function DetailPrescription() {
   const { id } = useLocalSearchParams();
@@ -41,11 +41,16 @@ export default function DetailPrescription() {
   const handleExport = async (mode: 'print' | 'share') => {
     try {
       setPrinting(true);
-      const [patientLabel, medecinLabel] = await Promise.all([
-        getPatientLabel(ord.patientId),
+      const [patient, medecinLabel] = await Promise.all([
+        getPatientEntete(ord.patientId),
         getMedecinLabel(ord.medecinId),
       ]);
-      const document = { ...ord, patientLabel, medecinLabel };
+      const document = {
+        ...ord,
+        patientLabel: patient.label,
+        patientDetail: patient.details,
+        medecinLabel,
+      };
       await (mode === 'print' ? imprimerOrdonnance(document) : partagerOrdonnancePdf(document));
     } catch (error: any) {
       // L'annulation du dialogue système lève aussi une erreur : on reste discret

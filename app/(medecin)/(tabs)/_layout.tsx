@@ -74,6 +74,7 @@ export default function MedecinTabsLayout() {
       />
 
       <Tabs.Screen name="patient/add" options={{ href: null }} />
+      <Tabs.Screen name="patient/detail" options={{ href: null }} />
       <Tabs.Screen name="ordonnance/add" options={{ href: null }} />
       <Tabs.Screen name="ordonnance/add-by-patient" options={{ href: null }} />
       <Tabs.Screen name="ordonnance/detail" options={{ href: null }} />

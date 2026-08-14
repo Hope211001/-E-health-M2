@@ -23,6 +23,12 @@ export interface IdentiteCompte {
   photo?: PhotoEnvoyee;
   /** 'M', 'F' ou '' (non renseigné) — l'API refuse toute autre valeur. */
   sexe?: Sexe | '';
+  /**
+   * Date civile 'AAAA-MM-JJ', ou '' (non renseignée). Toute autre forme est
+   * refusée en 400 : voir `utils/dateNaissance.ts` pour la conversion depuis
+   * la saisie 'JJ/MM/AAAA'.
+   */
+  dateNaissance?: string;
   adresse?: string;
 }
 
@@ -186,7 +192,7 @@ class AuthService extends ClientService {
     uid: string,
     donnees: {
       nom?: string; prenom?: string; tel?: string; photo?: PhotoEnvoyee;
-      sexe?: Sexe | ''; adresse?: string;
+      sexe?: Sexe | ''; adresse?: string; dateNaissance?: string;
     },
   ): Promise<User> {
     const response = await this.api.patch<User>(`/auth/profile/${uid}`, donnees);

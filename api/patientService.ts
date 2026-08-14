@@ -19,6 +19,24 @@ class PatientService extends ClientService {
         return response.data;
     }
 
+    /**
+     * Met à jour le dossier médical d'un patient : groupe sanguin, allergies,
+     * antécédents.
+     *
+     * Réservé au médecin traitant — l'API refuse en 403 tout autre appelant,
+     * y compris un autre médecin ou un administrateur.
+     *
+     * Un champ omis n'est pas touché : envoyer seulement `allergies` laisse le
+     * groupe sanguin et les antécédents en place.
+     */
+    async updateDossierMedical(
+        id: string,
+        donnees: { groupeSanguin?: string; allergies?: string[]; antecedents?: string[] },
+    ): Promise<Patient> {
+        const response = await this.api.patch<Patient>(`/patients/${id}/dossier-medical`, donnees);
+        return response.data;
+    }
+
 }
 
 export const patientService = new PatientService();

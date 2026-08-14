@@ -55,7 +55,13 @@ export interface User {
     identifiantsEnvoyesLe?: Timestamp;
     dateCreation: Timestamp;
     statut: 'actif' | 'inactif';
-    dateNaissance?: Timestamp;
+    /**
+     * Date civile 'AAAA-MM-JJ', ou '' si non renseignée — valeur que portent
+     * aussi tous les comptes antérieurs à ce champ. Chaîne et non Timestamp :
+     * une naissance est une date, pas un instant, et un Timestamp relu dans un
+     * autre fuseau reculerait d'un jour. Voir `utils/dateNaissance.ts`.
+     */
+    dateNaissance?: string;
     sexe?: Sexe | '';
     adresse?: string;
 }

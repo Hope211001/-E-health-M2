@@ -9,6 +9,8 @@ import { PrescriptionsListe, formatDateCourte } from '../../../components/Prescr
 import { APP_ROUTES } from '@/constants/routes';
 import { Colors, Radius, Shadows, Spacing } from '@/constants/theme';
 import { origineCompte } from '@/utils/roles';
+import { dateNaissanceAvecAge } from '@/utils/dateNaissance';
+import AvatarUtilisateur from '../../../components/AvatarUtilisateur';
 import AppHeader from '../../../components/AppHeader';
 
 type Onglet = 'patients' | 'prescriptions';
@@ -74,9 +76,17 @@ export default function DossierMedecinScreen() {
           <TouchableOpacity onPress={() => router.back()} hitSlop={10} style={styles.backBtn}>
             <Ionicons name="chevron-back" size={20} color={Colors.textSecondary} />
           </TouchableOpacity>
-          <View style={styles.avatar}>
-            <Ionicons name="medkit" size={22} color={Colors.primary} />
-          </View>
+          {/* La photo est chargée ICI et nulle part ailleurs : une seule requête
+              pour un écran ouvert à la demande, là où les listes en auraient
+              lancé une par ligne. */}
+          <AvatarUtilisateur
+            photoURL={dossier.photoURL}
+            email={dossier.email}
+            taille={44}
+            couleur={Colors.primary}
+            fond={Colors.primaryBg}
+            icone="medkit"
+          />
           <View style={{ flex: 1 }}>
             <Text style={styles.titre} numberOfLines={1}>{dossier.identite}</Text>
             <Text style={styles.sousTitre} numberOfLines={1}>{dossier.email}</Text>
@@ -126,6 +136,14 @@ export default function DossierMedecinScreen() {
               <Text style={styles.infoLabel}>Sexe</Text>
               <Text style={styles.infoValeur}>
                 {dossier.sexe === 'M' ? 'Masculin' : 'Féminin'}
+              </Text>
+            </View>
+          ) : null}
+          {dateNaissanceAvecAge(dossier.dateNaissance) ? (
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Naissance</Text>
+              <Text style={styles.infoValeur}>
+                {dateNaissanceAvecAge(dossier.dateNaissance)}
               </Text>
             </View>
           ) : null}

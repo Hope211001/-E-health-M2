@@ -32,7 +32,7 @@ export default function PharmaciesMapScreen() {
     (async () => {
       try {
         setPharmacies(await fetchPharmacies());
-      } catch (e: any) {
+      } catch {
         Toast.show({ type: 'error', text1: 'Carte', text2: 'Impossible de charger les pharmacies.' });
       } finally {
         setLoading(false);

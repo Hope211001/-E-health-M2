@@ -22,7 +22,8 @@ export interface DossierPatient {
   createur: Createur | null;
   authProvider: AuthProvider | null;
   sexe: Sexe | null;
-  dateNaissance: any;
+  /** Date civile 'AAAA-MM-JJ', ou null si non renseignée. */
+  dateNaissance: string | null;
   adresse: string;
   numeroPatient: string;
   groupeSanguin: string;
@@ -57,6 +58,8 @@ export interface DossierMedecin {
   statut: 'actif' | 'inactif';
   dateCreation: any;
   sexe: Sexe | null;
+  /** Date civile 'AAAA-MM-JJ', ou null si non renseignée. */
+  dateNaissance: string | null;
   adresse: string;
   /** Admin ou superadmin ayant enregistré ce médecin. */
   createur: Createur | null;

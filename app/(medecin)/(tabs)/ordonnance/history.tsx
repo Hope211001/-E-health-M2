@@ -9,7 +9,7 @@ import { prescriptionService } from '../../../../api/prescriptionService';
 import Toast from 'react-native-toast-message';
 import { APP_ROUTES } from '@/constants/routes';
 import { imprimerOrdonnance } from '@/utils/printOrdonnance';
-import { getMedecinLabel, getPatientLabel } from '@/utils/ordonnanceLabels';
+import { getMedecinLabel, getPatientEntete } from '@/utils/ordonnanceLabels';
 import AppHeader from '../../../../components/AppHeader';
 
 export default function HistoriquePrescriptions() {
@@ -63,7 +63,7 @@ export default function HistoriquePrescriptions() {
 
         setPrescriptions(list.map((p) => ({ ...p, _patient: patientMap[p.patientId] })));
       }
-    } catch (error) {
+    } catch {
       Toast.show({ type: 'error', text1: 'Erreur', text2: 'Impossible de charger les ordonnances' });
     } finally {
       setLoading(false);
@@ -83,16 +83,17 @@ export default function HistoriquePrescriptions() {
   const handlePrint = async (item: any) => {
     try {
       setPrintingId(item.id);
-      const [patientLabel, medecinLabel] = await Promise.all([
-        getPatientLabel(item.patientId),
+      const [patient, medecinLabel] = await Promise.all([
+        getPatientEntete(item.patientId),
         getMedecinLabel(item.medecinId || auth.currentUser?.uid),
       ]);
       await imprimerOrdonnance({
         ...item,
-        patientLabel: patientLabel
+        patientLabel: patient.label
           || (patientName as string)
           || item._patient?.numeroPatient
           || item._patient?.email,
+        patientDetail: patient.details,
         medecinLabel,
       });
     } catch (error: any) {

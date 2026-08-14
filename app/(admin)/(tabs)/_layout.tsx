@@ -1,13 +1,9 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useContext } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { AuthContext } from '../../../context/AuthContext';
 import { Colors } from '@/constants/theme';
 
 export default function AdminTabsLayout() {
-  const { user } = useContext(AuthContext);
-  const isSuperadmin = user?.role === 'superadmin';
   const insets = useSafeAreaInsets();
 
   return (
@@ -55,7 +51,6 @@ export default function AdminTabsLayout() {
         options={{
           title: 'Pharmacies',
           tabBarIcon: ({ color }) => <Ionicons name="medical" size={22} color={color} />,
-          href: isSuperadmin ? undefined : null,
         }}
       />
 
@@ -71,6 +66,7 @@ export default function AdminTabsLayout() {
       <Tabs.Screen name="ocr" options={{ href: null }} />
       <Tabs.Screen name="dossier-patient" options={{ href: null }} />
       <Tabs.Screen name="dossier-medecin" options={{ href: null }} />
+      <Tabs.Screen name="compte-detail" options={{ href: null }} />
     </Tabs>
   );
 }

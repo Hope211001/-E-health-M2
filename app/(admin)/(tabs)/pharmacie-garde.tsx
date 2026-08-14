@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import {
   View, Text, FlatList, TextInput, TouchableOpacity, ActivityIndicator,
-  RefreshControl, StyleSheet, Alert, Image, Modal, KeyboardAvoidingView, Platform,
+  RefreshControl, StyleSheet, Alert, Image, Modal, KeyboardAvoidingView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -408,10 +408,11 @@ export default function PharmacieGardeListScreen() {
 
       {/* --- Fenêtre de scraping --- */}
       <Modal visible={scrapeVisible} transparent animationType="fade" onRequestClose={() => setScrapeVisible(false)}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          style={styles.modalOverlay}
-        >
+        {/* `behavior="padding"` sur les deux plateformes : l'app étant en
+            edge-to-edge, Android ne redimensionne plus la fenêtre à l'ouverture
+            du clavier, et un `behavior` absent ne fait alors rien du tout — le
+            champ se retrouvait derrière les touches. */}
+        <KeyboardAvoidingView behavior="padding" style={styles.modalOverlay}>
           <View style={styles.modalCard}>
             <View style={styles.modalHead}>
               <View style={styles.scrapeIcon}>

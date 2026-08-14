@@ -51,7 +51,7 @@ export default function NotificationList() {
       await notificationService.markAllAsRead();
       setNotifications(prev => prev.map(n => ({ ...n, lue: true })));
       Toast.show({ type: 'success', text1: 'Tout lu' });
-    } catch (e) {
+    } catch {
       Toast.show({ type: 'error', text1: 'Erreur' });
     }
   };

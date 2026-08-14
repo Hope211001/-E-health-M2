@@ -15,6 +15,8 @@ export const APP_ROUTES = {
     PATIENT: {
       LISTE: "/(medecin)/(tabs)/patient/list",
       ADD: "/(medecin)/(tabs)/patient/add",
+      // Fiche d'un patient : attend ?id=<id du document patients>
+      DETAIL: "/(medecin)/(tabs)/patient/detail",
     },
     ORDONNANCE: {
       ADD: "/(medecin)/(tabs)/ordonnance/add",
@@ -50,6 +52,9 @@ export const APP_ROUTES = {
     // Dossiers consultés par l'administration : attendent ?id=<uid>
     DOSSIER_PATIENT: "/(admin)/(tabs)/dossier-patient",
     DOSSIER_MEDECIN: "/(admin)/(tabs)/dossier-medecin",
+    // Fiche d'un compte d'administration : attend ?id=<uid>. Distincte des
+    // dossiers, un compte admin n'ayant ni patients ni ordonnances.
+    COMPTE_DETAIL: "/(admin)/(tabs)/compte-detail",
     GRAPHES: "/(admin)/(tabs)/graphes",
   },
 } as const;

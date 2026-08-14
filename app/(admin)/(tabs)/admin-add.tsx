@@ -12,8 +12,10 @@ import { authService } from '../../../api/authService';
 import { InfoIdentifiants } from '../../../components/InfoIdentifiants';
 import PhotoProfilPicker from '../../../components/PhotoProfilPicker';
 import SelecteurSexe from '../../../components/SelecteurSexe';
+import ChampDateNaissance from '../../../components/ChampDateNaissance';
 import type { Sexe } from '../../../types/collection';
 import { Colors, Radius, Shadows, Spacing } from '@/constants/theme';
+import { versISO } from '@/utils/dateNaissance';
 
 type RoleAdministration = 'admin' | 'superadmin';
 
@@ -64,6 +66,9 @@ export default function AdminAddScreen() {
     email: '', tel: '', nom: '', prenom: '', adresse: '',
   });
   const [sexe, setSexe] = useState<Sexe | ''>('');
+  // Hors du formulaire zod : la saisie 'JJ/MM/AAAA' n'est convertie qu'à
+  // l'envoi, une date en cours de frappe n'ayant pas de forme ISO.
+  const [naissance, setNaissance] = useState('');
   const [role, setRole] = useState<RoleAdministration>('admin');
   const [photo, setPhoto] = useState('');
   const [loading, setLoading] = useState(false);
@@ -86,12 +91,22 @@ export default function AdminAddScreen() {
       return;
     }
 
+    const dateNaissance = versISO(naissance);
+    if (dateNaissance === null) {
+      Toast.show({
+        type: 'error',
+        text1: 'Date de naissance invalide',
+        text2: 'Format attendu : JJ/MM/AAAA',
+      });
+      return;
+    }
+
     setLoading(true);
     try {
       const propre = validation.data;
       const cree = await authService.registerAdmin(
         propre.email, propre.tel, propre.nom, propre.prenom,
-        { role, photo, sexe, adresse: propre.adresse },
+        { role, photo, sexe, dateNaissance, adresse: propre.adresse },
       );
 
       // Le compte existe quoi qu'il arrive : seul l'email a pu échouer.
@@ -206,6 +221,12 @@ export default function AdminAddScreen() {
             onChange={setSexe}
             couleur={accent}
             fond={accentFond}
+          />
+
+          <ChampDateNaissance
+            valeur={naissance}
+            onChange={setNaissance}
+            couleur={accent}
           />
           <Field label="Email" value={form.email} onChangeText={update('email')} keyboardType="email-address" />
 

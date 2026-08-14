@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useRef } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, FlatList,
-  ActivityIndicator, KeyboardAvoidingView, Platform,
+  ActivityIndicator, KeyboardAvoidingView, Keyboard,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { conversationService } from '../../api/conversationService';
@@ -21,7 +21,31 @@ export default function ChatScreen() {
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
 
+  const insets = useSafeAreaInsets();
+  const [clavierOuvert, setClavierOuvert] = useState(false);
+
   const currentUserId = auth.currentUser?.uid;
+
+  /**
+   * Le clavier est suivi pour deux raisons.
+   *
+   * 1. La marge basse de la barre de saisie. L'app est en edge-to-edge : sans
+   *    clavier, la barre doit dégager la zone de navigation système
+   *    (`insets.bottom`), mais clavier ouvert cette zone est recouverte et la
+   *    marge laisserait un vide au-dessus des touches.
+   * 2. Le défilement. L'ouverture du clavier réduit la hauteur visible de la
+   *    liste : sans ce recadrage, les derniers messages passent dessous, et
+   *    `onContentSizeChange` ne se déclenche pas puisque le contenu, lui, n'a
+   *    pas changé.
+   */
+  useEffect(() => {
+    const ouvert = Keyboard.addListener('keyboardDidShow', () => {
+      setClavierOuvert(true);
+      flatListRef.current?.scrollToEnd({ animated: true });
+    });
+    const ferme = Keyboard.addListener('keyboardDidHide', () => setClavierOuvert(false));
+    return () => { ouvert.remove(); ferme.remove(); };
+  }, []);
 
   const fetchMessages = async () => {
     try {
@@ -136,11 +160,18 @@ export default function ChatScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50">
-      <KeyboardAvoidingView
-        className="flex-1"
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
+    // `edges` sans 'bottom' : la marge basse est portée par la barre de saisie,
+    // qui doit pouvoir la retirer quand le clavier recouvre cette zone.
+    <SafeAreaView className="flex-1 bg-slate-50" edges={['top', 'left', 'right']}>
+      {/*
+        `behavior="padding"` sur les DEUX plateformes, et non sur iOS seulement.
+        L'app est en edge-to-edge (`edgeToEdgeEnabled` dans app.json) : Android
+        ne redimensionne donc plus la fenêtre à l'ouverture du clavier, et sans
+        `behavior`, KeyboardAvoidingView ne fait strictement rien — la barre de
+        saisie restait cachée derrière les touches. Même choix que dans
+        components/AppScrollView.tsx.
+      */}
+      <KeyboardAvoidingView className="flex-1" behavior="padding">
       {/* Header */}
       <View className="bg-white px-4 py-3 flex-row items-center border-b border-slate-100">
         <TouchableOpacity onPress={() => router.back()} className="bg-slate-50 p-2.5 rounded-xl mr-3">
@@ -184,7 +215,10 @@ export default function ChatScreen() {
       )}
 
       {/* Barre de saisie */}
-      <View className="bg-white px-4 py-3 border-t border-slate-100 flex-row items-end">
+      <View
+        className="bg-white px-4 pt-3 border-t border-slate-100 flex-row items-end"
+        style={{ paddingBottom: clavierOuvert ? 12 : 12 + insets.bottom }}
+      >
           <TextInput
             className="flex-1 bg-slate-50 rounded-2xl px-5 py-3 text-slate-900 text-[15px] max-h-[120px] border border-slate-100"
             placeholder="Écrire un message..."

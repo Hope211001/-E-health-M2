@@ -10,6 +10,12 @@ import { conversationService } from '../../../../api/conversationService';
 import { Patient } from '../../../../types/collection';
 import { APP_ROUTES } from '@/constants/routes';
 import AppHeader from '../../../../components/AppHeader';
+import AvatarUtilisateur from '../../../../components/AvatarUtilisateur';
+import { libelleAge } from '@/utils/dateNaissance';
+
+/** Nom affichable d'un patient, avec repli sur l'email si l'état civil manque. */
+const nomAffiche = (p: Patient) =>
+  (p.prenom || p.nom) ? `${p.prenom || ''} ${p.nom || ''}`.trim() : p.email;
 
 export default function ListePatients() {
   const router = useRouter();
@@ -57,18 +63,47 @@ export default function ListePatients() {
   const renderPatientItem = ({ item }: { item: Patient }) => (
     <View className="bg-white rounded-3xl p-5 mb-4 shadow-sm border border-slate-100">
       <View className="flex-row items-center">
-        <View className="w-14 h-14 bg-emerald-100 rounded-2xl items-center justify-center">
-          <Ionicons name="person" size={24} color="#059669" />
-        </View>
+        {/* Volontairement SANS `photoURL` : une liste de 30 patients
+            déclencherait 30 téléchargements Cloudinary au défilement, pour des
+            vignettes de 56 px. L'avatar retombe alors sur les initiales, qui
+            identifient tout aussi bien et ne coûtent aucune requête. La photo
+            est chargée une seule fois, sur l'écran de détail. */}
+        <AvatarUtilisateur
+          prenom={item.prenom}
+          nom={item.nom}
+          email={item.email}
+          taille={56}
+        />
 
         <View className="flex-1 ml-4">
           <Text className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">ID: {item.numeroPatient}</Text>
-          <Text className="text-slate-900 font-extrabold text-base">{item.email}</Text>
+          {/* Le nom en titre, l'email seulement en repli : un médecin cherche
+              ses patients par leur nom, pas par leur adresse électronique. */}
+          <Text className="text-slate-900 font-extrabold text-base" numberOfLines={1}>
+            {nomAffiche(item)}
+          </Text>
+          {nomAffiche(item) !== item.email && (
+            <Text className="text-slate-400 text-xs" numberOfLines={1}>{item.email}</Text>
+          )}
           <View className="flex-row items-center mt-1">
             <Ionicons name="call-outline" size={12} color="#64748b" />
             {/* Si tu as bien fait la modif backend, item.telephone sera affiché ici */}
             <Text className="text-slate-500 text-xs ml-1">{item.telephone || "Pas de numéro"}</Text>
           </View>
+          {/* Sexe et âge : deux données cliniques qui conditionnent les
+              posologies. Sur leur propre ligne, la précédente étant déjà prise
+              par le téléphone. Chacune est facultative, d'où le filtrage. */}
+          {(item.sexe || libelleAge(item.dateNaissance)) ? (
+            <View className="flex-row items-center mt-1">
+              <Ionicons name="information-circle-outline" size={12} color="#64748b" />
+              <Text className="text-slate-500 text-xs ml-1" numberOfLines={1}>
+                {[
+                  item.sexe === 'M' ? 'Masculin' : item.sexe === 'F' ? 'Féminin' : null,
+                  libelleAge(item.dateNaissance),
+                ].filter(Boolean).join('  ·  ')}
+              </Text>
+            </View>
+          ) : null}
         </View>
 
         <View className="bg-green-100 px-3 py-1 rounded-lg">
@@ -79,6 +114,20 @@ export default function ListePatients() {
       <View className="h-[1px] bg-slate-50 my-5" />
 
       <View className="flex-row gap-3">
+        {/* Ouvre la fiche complète : photo, données médicales et horaires de
+            rappel. Tout ce qui coûte à charger y est repoussé, pour que cette
+            liste reste une liste. */}
+        <TouchableOpacity
+          className="flex-1 bg-slate-100 h-12 rounded-2xl flex-row items-center justify-center"
+          onPress={() => router.push({
+            pathname: APP_ROUTES.MEDECIN.PATIENT.DETAIL,
+            params: { id: item.id }
+          })}
+        >
+          <Ionicons name="eye-outline" size={18} color="#475569" />
+          <Text className="text-slate-600 font-bold ml-2">Détail</Text>
+        </TouchableOpacity>
+
         <TouchableOpacity
           className="flex-1 bg-slate-100 h-12 rounded-2xl flex-row items-center justify-center"
           onPress={() => router.push({
@@ -88,6 +137,25 @@ export default function ListePatients() {
         >
           <Ionicons name="folder-open-outline" size={18} color="#475569" />
           <Text className="text-slate-600 font-bold ml-2">Dossier</Text>
+        </TouchableOpacity>
+
+      </View>
+
+      {/* Deuxième rangée plutôt qu'une seule de quatre : « Prescrire » et
+          « Message » côte à côte tiennent, quatre libellés français sur une
+          ligne seraient tronqués sur un écran étroit. */}
+      <View className="flex-row gap-3 mt-3">
+        <TouchableOpacity
+          className="flex-1 bg-emerald-50 h-12 rounded-2xl flex-row items-center justify-center border border-emerald-100"
+          onPress={async () => {
+            try {
+              const conv = await conversationService.getOrCreate({ patientId: item.userId || item.id });
+              router.push({ pathname: '/(conversation)/chat', params: { conversationId: conv.id, contactName: nomAffiche(item) } } as any);
+            } catch (e) { console.error(e); }
+          }}
+        >
+          <Ionicons name="chatbubble-outline" size={18} color="#059669" />
+          <Text className="text-emerald-700 font-bold ml-2">Message</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -101,20 +169,6 @@ export default function ListePatients() {
           <Text className="text-white font-bold ml-2">Prescrire</Text>
         </TouchableOpacity>
       </View>
-
-      {/* Bouton Message */}
-      <TouchableOpacity
-        className="bg-emerald-50 h-12 rounded-2xl flex-row items-center justify-center mt-3 border border-emerald-100"
-        onPress={async () => {
-          try {
-            const conv = await conversationService.getOrCreate({ patientId: item.userId || item.id });
-            router.push({ pathname: '/(conversation)/chat', params: { conversationId: conv.id, contactName: item.email } } as any);
-          } catch (e) { console.error(e); }
-        }}
-      >
-        <Ionicons name="chatbubble-outline" size={18} color="#059669" />
-        <Text className="text-emerald-700 font-bold ml-2">Message</Text>
-      </TouchableOpacity>
     </View>
   );
 
@@ -148,9 +202,13 @@ export default function ListePatients() {
         <FlatList
           data={patients.filter(p => {
             const search = searchQuery.toLowerCase();
-            // Ajout d'une sécurité ?. sur les champs au cas où ils seraient nuls
+            // Le nom fait partie des critères : c'est le titre affiché sur la
+            // carte, chercher « Rakoto » sans le trouver passerait pour un bug.
+            // Sécurité ?. sur les champs au cas où ils seraient nuls.
             return (p.numeroPatient?.toLowerCase() || "").includes(search) ||
-              (p.email?.toLowerCase() || "").includes(search);
+              (p.email?.toLowerCase() || "").includes(search) ||
+              (p.nom?.toLowerCase() || "").includes(search) ||
+              (p.prenom?.toLowerCase() || "").includes(search);
           })}
           // CORRECTION ICI : On force le retour d'une string même si l'ID est absent
           keyExtractor={(item, index) => item.id?.toString() || index.toString()}

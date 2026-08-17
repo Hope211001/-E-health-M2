@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { prescriptionService } from '../../../../api/prescriptionService';
 import Toast from 'react-native-toast-message';
 import { imprimerOrdonnance, partagerOrdonnancePdf } from '@/utils/printOrdonnance';
-import { getMedecinLabel, getPatientEntete } from '@/utils/ordonnanceLabels';
+import { getEtablissementEntete, getMedecinLabel, getPatientEntete } from '@/utils/ordonnanceLabels';
 
 export default function DetailPrescription() {
   const { id } = useLocalSearchParams();
@@ -41,15 +41,19 @@ export default function DetailPrescription() {
   const handleExport = async (mode: 'print' | 'share') => {
     try {
       setPrinting(true);
-      const [patient, medecinLabel] = await Promise.all([
+      const [patient, medecinLabel, etablissement] = await Promise.all([
         getPatientEntete(ord.patientId),
         getMedecinLabel(ord.medecinId),
+        getEtablissementEntete(ord.etablissementId, ord.medecinId),
       ]);
       const document = {
         ...ord,
         patientLabel: patient.label,
         patientDetail: patient.details,
         medecinLabel,
+        etablissementLabel: etablissement.label,
+        etablissementDetail: etablissement.details,
+        etablissementContact: etablissement.contact,
       };
       await (mode === 'print' ? imprimerOrdonnance(document) : partagerOrdonnancePdf(document));
     } catch (error: any) {

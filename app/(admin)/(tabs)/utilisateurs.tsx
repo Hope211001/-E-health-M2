@@ -11,7 +11,9 @@ import { authService } from '../../../api/authService';
 import { User, UserRole } from '../../../types/collection';
 import { APP_ROUTES } from '@/constants/routes';
 import { Colors, Fonts, Radius, Shadows, Spacing } from '@/constants/theme';
-import { idAbrege, iconeOrigine, origineCompte } from '@/utils/roles';
+import {
+  idAbrege, iconeOrigine, origineCompte, iconeEtablissement, libelleEtablissement,
+} from '@/utils/roles';
 import { libelleAge } from '@/utils/dateNaissance';
 import AppHeader from '../../../components/AppHeader';
 import AvatarUtilisateur from '../../../components/AvatarUtilisateur';
@@ -372,6 +374,22 @@ export default function UtilisateursScreen() {
                     ].filter(Boolean).join('  ·  ')}
                   </Text>
                 ) : null}
+
+                {/* Rattachement : affiché seulement au superadmin. Pour un
+                    admin, la ligne serait la même sur toutes les cartes — il ne
+                    voit que son propre établissement — et n'apprendrait rien. */}
+                {isSuperadmin && (
+                  <View style={styles.meta}>
+                    <Ionicons
+                      name={iconeEtablissement(item.etablissement, item.role)}
+                      size={11}
+                      color={Colors.textMuted}
+                    />
+                    <Text style={styles.metaTxt} numberOfLines={1}>
+                      {libelleEtablissement(item.etablissement, item.role)}
+                    </Text>
+                  </View>
+                )}
 
                 {/* Origine du compte et identifiant technique : l'administration
                     a besoin de savoir qui a enregistré un compte, et l'uid sert

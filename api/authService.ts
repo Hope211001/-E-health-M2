@@ -30,6 +30,13 @@ export interface IdentiteCompte {
    */
   dateNaissance?: string;
   adresse?: string;
+  /**
+   * Référence vers le référentiel `villes`. Facultative sur un compte —
+   * contrairement à un établissement, ni la connexion ni les ordonnances n'en
+   * dépendent — mais une valeur fournie doit exister dans le référentiel.
+   * Chaîne vide pour la retirer.
+   */
+  villeId?: string;
 }
 
 /**
@@ -106,13 +113,20 @@ class AuthService extends ClientService {
     return response.data;
   }
 
-  /** Mot de passe généré et envoyé par le backend — voir registerPatient. */
+  /**
+   * Mot de passe généré et envoyé par le backend — voir registerPatient.
+   *
+   * `etablissementId` n'est lu que lorsque l'appelant est superadmin : national,
+   * il n'a aucun établissement à transmettre et doit donc désigner celui du
+   * médecin. Un admin transmet le sien d'office, et la valeur envoyée est
+   * ignorée — il ne peut pas recruter pour l'hôpital voisin.
+   */
   async registerMedecin(
     email: string,
     tel: string,
     spec: string[],
     ordre: string,
-    extra?: IdentiteCompte,
+    extra?: IdentiteCompte & { etablissementId?: string },
   ): Promise<Medecin & CreationCompte> {
     const response = await this.api.post<Medecin & CreationCompte>('/auth/register-medecin', {
       email, tel, spec, ordre, ...extra,
@@ -124,6 +138,10 @@ class AuthService extends ClientService {
    * Crée un compte d'administration. `role` vaut 'admin' par défaut ; un
    * superadmin peut aussi créer un pair en passant 'superadmin'.
    *
+   * `etablissementId` est OBLIGATOIRE pour un admin : créer un administrateur,
+   * c'est confier le périmètre d'un établissement à quelqu'un. Il est au
+   * contraire ignoré pour un superadmin, dont la portée est nationale.
+   *
    * Mot de passe généré et envoyé par le backend — voir registerPatient.
    */
   async registerAdmin(
@@ -131,11 +149,33 @@ class AuthService extends ClientService {
     tel: string,
     nom: string,
     prenom: string,
-    extra?: Omit<IdentiteCompte, 'nom' | 'prenom'> & { role?: 'admin' | 'superadmin' },
+    extra?: Omit<IdentiteCompte, 'nom' | 'prenom'> & {
+      role?: 'admin' | 'superadmin';
+      etablissementId?: string;
+    },
   ): Promise<User & CreationCompte> {
     const response = await this.api.post<User & CreationCompte>('/auth/register-admin', {
       email, tel, nom, prenom, ...extra,
     });
+    return response.data;
+  }
+
+  /**
+   * Rattache un compte à un établissement. Superadmin uniquement.
+   *
+   * Sert à régulariser les comptes antérieurs au multi-établissement et les
+   * inscriptions Google (qui n'ont pas de créateur pour leur en transmettre un),
+   * et à acter la mutation d'un praticien.
+   *
+   * `patientsRestes` compte les patients du médecin qui NE le suivent PAS dans
+   * son nouvel établissement : ils restent là où ils sont soignés et doivent
+   * être réaffectés à un praticien sur place.
+   */
+  async rattacherEtablissement(
+    uid: string,
+    etablissementId: string,
+  ): Promise<{ uid: string; etablissementId: string; patientsRestes: number; message: string }> {
+    const response = await this.api.patch(`/auth/users/${uid}/etablissement`, { etablissementId });
     return response.data;
   }
 
@@ -192,7 +232,7 @@ class AuthService extends ClientService {
     uid: string,
     donnees: {
       nom?: string; prenom?: string; tel?: string; photo?: PhotoEnvoyee;
-      sexe?: Sexe | ''; adresse?: string; dateNaissance?: string;
+      sexe?: Sexe | ''; adresse?: string; dateNaissance?: string; villeId?: string;
     },
   ): Promise<User> {
     const response = await this.api.patch<User>(`/auth/profile/${uid}`, donnees);

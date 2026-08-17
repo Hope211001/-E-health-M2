@@ -58,6 +58,14 @@ export default function AdminTabsLayout() {
           onglet : à cinq, les libellés de la barre deviennent illisibles. */}
       <Tabs.Screen name="profil" options={{ href: null }} />
 
+      {/* Établissements : atteint depuis le tableau de bord, comme le profil.
+          La barre est déjà à quatre onglets, un cinquième libellé deviendrait
+          illisible — et l'écran est réservé au superadmin, donc invisible pour
+          la moitié des comptes qui voient cette barre. */}
+      <Tabs.Screen name="etablissements" options={{ href: null }} />
+      <Tabs.Screen name="etablissement-form" options={{ href: null }} />
+      <Tabs.Screen name="patient-transfert" options={{ href: null }} />
+
       <Tabs.Screen name="medecin-add" options={{ href: null }} />
       <Tabs.Screen name="patient-add" options={{ href: null }} />
       <Tabs.Screen name="admin-add" options={{ href: null }} />

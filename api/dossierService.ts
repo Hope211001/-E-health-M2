@@ -1,5 +1,7 @@
 import { ClientService } from './clientService';
-import { AuthProvider, Createur, Prescription, Sexe } from '../types/collection';
+import {
+  AuthProvider, Createur, EtablissementResolu, Prescription, Sexe,
+} from '../types/collection';
 
 /** Répartition des prises de médicaments d'un patient. */
 export interface Observance {
@@ -20,6 +22,12 @@ export interface DossierPatient {
   dateCreation: any;
   /** Compte ayant enregistré ce patient (son médecin, ou l'administration). */
   createur: Createur | null;
+  /**
+   * Établissement où le patient est suivi. Distinct de `createur` : un patient
+   * enregistré par l'administration puis transféré n'est plus rattaché à
+   * l'établissement d'où vient son compte.
+   */
+  etablissement: EtablissementResolu | null;
   authProvider: AuthProvider | null;
   sexe: Sexe | null;
   /** Date civile 'AAAA-MM-JJ', ou null si non renseignée. */
@@ -63,6 +71,8 @@ export interface DossierMedecin {
   adresse: string;
   /** Admin ou superadmin ayant enregistré ce médecin. */
   createur: Createur | null;
+  /** Établissement où le praticien exerce aujourd'hui. */
+  etablissement: EtablissementResolu | null;
   authProvider: AuthProvider | null;
   specialite: string[];
   numeroOrdre: string;

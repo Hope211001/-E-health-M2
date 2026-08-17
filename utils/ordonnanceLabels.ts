@@ -1,6 +1,8 @@
 import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../api/firebase';
 import { libelleAge } from './dateNaissance';
+import { SIGLE_TYPE_ETABLISSEMENT } from '../api/etablissementService';
+import type { TypeEtablissement } from '../types/collection';
 
 /** Compose "Prénom Nom" à partir d'un document utilisateur, sinon l'email. */
 const nomComplet = (data: any): string | undefined => {
@@ -69,5 +71,68 @@ export const getMedecinLabel = async (medecinId?: string): Promise<string | unde
     return nom ? `Dr ${nom}` : undefined;
   } catch {
     return undefined;
+  }
+};
+
+/** En-tête « établissement » d'une ordonnance : la structure émettrice. */
+export type EnteteEtablissement = {
+  /** Nom de l'établissement. */
+  label?: string;
+  /** "CSB II · Antananarivo". */
+  details?: string;
+  /** Adresse postale et téléphone, pour le pied de l'ordonnance. */
+  contact?: string;
+};
+
+/**
+ * Établissement émetteur d'une ordonnance.
+ *
+ * On lit d'abord `prescriptions.etablissementId` — l'établissement figé au
+ * moment de la prescription — et non celui du médecin aujourd'hui : une
+ * ordonnance est un acte daté, et un praticien muté depuis ne doit pas faire
+ * réapparaître l'en-tête de son nouvel hôpital sur un document ancien.
+ *
+ * Le repli sur le médecin ne sert qu'aux ordonnances antérieures à ce champ,
+ * qui n'en portent aucun.
+ */
+export const getEtablissementEntete = async (
+  etablissementId?: string,
+  medecinId?: string,
+): Promise<EnteteEtablissement> => {
+  try {
+    let id = (etablissementId || '').trim();
+
+    if (!id && medecinId) {
+      const medSnap = await getDoc(doc(db, 'users', medecinId));
+      id = String(medSnap.exists() ? medSnap.data()?.etablissementId ?? '' : '').trim();
+    }
+    if (!id) return {};
+
+    const snap = await getDoc(doc(db, 'etablissements', id));
+    if (!snap.exists()) return {};
+    const e = snap.data();
+
+    // L'établissement ne stocke qu'un `villeId` : il faut donc lire la ville
+    // pour composer l'en-tête. Une lecture de plus, acceptable ici — c'est une
+    // impression ponctuelle, pas une liste qui défile. C'est aussi ce qui
+    // garantit qu'une commune renommée apparaît corrigée sur les ordonnances
+    // imprimées ensuite.
+    let villeNom = '';
+    const villeId = String(e?.villeId || '').trim();
+    if (villeId) {
+      const villeSnap = await getDoc(doc(db, 'villes', villeId));
+      if (villeSnap.exists()) villeNom = villeSnap.data()?.nom || '';
+    }
+
+    return {
+      label: e?.nom || undefined,
+      details: [SIGLE_TYPE_ETABLISSEMENT[e?.type as TypeEtablissement] ?? e?.type, villeNom]
+        .filter(Boolean).join(' · ') || undefined,
+      contact: [e?.adresse, e?.telephone].filter(Boolean).join(' — ') || undefined,
+    };
+  } catch {
+    // Un en-tête absent n'empêche pas d'imprimer l'ordonnance : le document
+    // reste valide sans le nom de la structure, l'inverse n'est pas vrai.
+    return {};
   }
 };

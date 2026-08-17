@@ -8,7 +8,7 @@ import { dossierService, DossierPatient } from '../../../api/dossierService';
 import { PrescriptionsListe, formatDateCourte } from '../../../components/PrescriptionsListe';
 import { APP_ROUTES } from '@/constants/routes';
 import { Colors, Radius, Spacing } from '@/constants/theme';
-import { origineCompte } from '@/utils/roles';
+import { libelleEtablissement, origineCompte } from '@/utils/roles';
 import { dateNaissanceAvecAge } from '@/utils/dateNaissance';
 import AppHeader from '../../../components/AppHeader';
 import AvatarUtilisateur from '../../../components/AvatarUtilisateur';
@@ -165,6 +165,14 @@ export default function DossierPatientScreen() {
           <Info label="Naissance" valeur={dateNaissanceAvecAge(dossier.dateNaissance)} />
           <Info label="Adresse" valeur={dossier.adresse} />
           <Info label="Inscrit le" valeur={formatDateCourte(dossier.dateCreation)} />
+          {/* Établissement où le patient est suivi. Distinct de « Créé par » :
+              un patient peut avoir été enregistré par l'administration puis
+              transféré, l'origine et le rattachement actuel ne coïncident pas
+              forcément. */}
+          <Info
+            label="Suivi à"
+            valeur={libelleEtablissement(dossier.etablissement, 'patient')}
+          />
           <Info label="Créé par" valeur={origineCompte(dossier)} />
           <Info label="Identifiant" valeur={dossier.uid} />
         </View>
@@ -214,6 +222,20 @@ export default function DossierPatientScreen() {
           ) : (
             <Text style={styles.aucun}>Aucun médecin traitant rattaché.</Text>
           )}
+
+          {/* Le transfert est la SEULE écriture de cet écran, par ailleurs en
+              lecture seule : ce n'est pas un acte médical mais un mouvement
+              organisationnel, qui relève bien de l'administration. */}
+          <TouchableOpacity
+            style={styles.transfertBtn}
+            activeOpacity={0.85}
+            onPress={() => router.push(
+              `${APP_ROUTES.ADMIN.PATIENT_TRANSFERT}?id=${dossier.uid}` as Href,
+            )}
+          >
+            <Ionicons name="swap-horizontal" size={16} color={Colors.adminAccent} />
+            <Text style={styles.transfertTxt}>Transférer vers un autre établissement</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Historique des prescriptions */}
@@ -294,4 +316,10 @@ const styles = StyleSheet.create({
   },
   medecinNom: { fontSize: 14, fontWeight: '700', color: Colors.textPrimary },
   medecinMeta: { fontSize: 12, color: Colors.textSecondary, marginTop: 1 },
+  transfertBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+    marginTop: Spacing.md, paddingVertical: 11,
+    borderRadius: Radius.md, backgroundColor: Colors.adminAccentBg,
+  },
+  transfertTxt: { fontSize: 13, fontWeight: '700', color: Colors.adminAccent },
 });

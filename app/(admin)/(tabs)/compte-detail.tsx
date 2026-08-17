@@ -25,7 +25,9 @@ import { User } from '../../../types/collection';
 import AppHeader from '../../../components/AppHeader';
 import AvatarUtilisateur from '../../../components/AvatarUtilisateur';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
-import { iconeOrigine, origineCompte } from '@/utils/roles';
+import {
+  iconeEtablissement, iconeOrigine, libelleEtablissement, origineCompte,
+} from '@/utils/roles';
 import { dateNaissanceAvecAge } from '@/utils/dateNaissance';
 
 /** Ligne « libellé / valeur ». Masquée quand la valeur est absente. */
@@ -162,6 +164,22 @@ export default function CompteDetailScreen() {
 
         <Text style={styles.section}>Compte</Text>
         <View style={styles.carte}>
+          {/* Portée du compte : l'établissement pour un admin, le pays entier
+              pour un superadmin. C'est la première chose à vérifier quand un
+              administrateur signale qu'il « ne voit pas » un utilisateur. */}
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Portée</Text>
+            <View style={styles.origine}>
+              <Ionicons
+                name={iconeEtablissement(compte.etablissement, compte.role)}
+                size={13}
+                color={Colors.textMuted}
+              />
+              <Text style={styles.infoValeur}>
+                {libelleEtablissement(compte.etablissement, compte.role)}
+              </Text>
+            </View>
+          </View>
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Origine</Text>
             <View style={styles.origine}>

@@ -12,10 +12,13 @@ import { authService } from '../../../api/authService';
 import { InfoIdentifiants } from '../../../components/InfoIdentifiants';
 import PhotoProfilPicker from '../../../components/PhotoProfilPicker';
 import SelecteurSexe from '../../../components/SelecteurSexe';
+import SelecteurVille from '../../../components/SelecteurVille';
+import SelecteurEtablissement from '../../../components/SelecteurEtablissement';
 import ChampDateNaissance from '../../../components/ChampDateNaissance';
 import type { Sexe } from '../../../types/collection';
 import { Colors, Radius, Shadows, Spacing } from '@/constants/theme';
 import { versISO } from '@/utils/dateNaissance';
+import { useAuth } from '../../../hooks/useAuth';
 
 type RoleAdministration = 'admin' | 'superadmin';
 
@@ -62,10 +65,14 @@ const schema = z.object({
 
 export default function AdminAddScreen() {
   const router = useRouter();
+  const { user } = useAuth();
   const [form, setForm] = useState({
     email: '', tel: '', nom: '', prenom: '', adresse: '',
   });
   const [sexe, setSexe] = useState<Sexe | ''>('');
+  // Référence vers le référentiel `villes` ; facultative sur un compte.
+  const [villeId, setVilleId] = useState('');
+  const [etablissementId, setEtablissementId] = useState('');
   // Hors du formulaire zod : la saisie 'JJ/MM/AAAA' n'est convertie qu'à
   // l'envoi, une date en cours de frappe n'ayant pas de forme ISO.
   const [naissance, setNaissance] = useState('');
@@ -101,12 +108,25 @@ export default function AdminAddScreen() {
       return;
     }
 
+    // Un administrateur EST un périmètre : le créer sans établissement
+    // reviendrait à créer un compte qui ne peut rien administrer, et qui serait
+    // refusé par le serveur à la première création d'utilisateur. Le
+    // superadmin, lui, est national et n'en reçoit aucun.
+    if (role === 'admin' && !etablissementId) {
+      Toast.show({
+        type: 'error',
+        text1: 'Établissement requis',
+        text2: "Choisissez l'établissement que cet administrateur va gérer.",
+      });
+      return;
+    }
+
     setLoading(true);
     try {
       const propre = validation.data;
       const cree = await authService.registerAdmin(
         propre.email, propre.tel, propre.nom, propre.prenom,
-        { role, photo, sexe, dateNaissance, adresse: propre.adresse },
+        { role, photo, sexe, dateNaissance, adresse: propre.adresse, etablissementId, villeId },
       );
 
       // Le compte existe quoi qu'il arrive : seul l'email a pu échouer.
@@ -190,11 +210,24 @@ export default function AdminAddScreen() {
             <View style={styles.avertissement}>
               <Ionicons name="warning-outline" size={16} color={Colors.warning} />
               <Text style={styles.avertissementTxt}>
-                Ce compte aura les mêmes pouvoirs que le vôtre, y compris celui de
+                Ce compte aura les mêmes pouvoirs que le vôtre sur l&apos;ensemble
+                du pays, tous établissements confondus, y compris celui de
                 désactiver d&apos;autres comptes. Le rôle ne pourra pas être modifié ensuite.
               </Text>
             </View>
           )}
+
+          {/* Masqué pour un superadmin créé : sa portée est nationale, il n'est
+              rattaché à aucun établissement. Afficher un sélecteur inopérant
+              laisserait croire le contraire. */}
+          <SelecteurEtablissement
+            valeur={etablissementId}
+            onChange={setEtablissementId}
+            role={user?.role}
+            couleur={accent}
+            fond={accentFond}
+            masque={role === 'superadmin'}
+          />
 
           <PhotoProfilPicker
             valeur={photo}
@@ -221,6 +254,16 @@ export default function AdminAddScreen() {
             onChange={setSexe}
             couleur={accent}
             fond={accentFond}
+          />
+
+          {/* Ville de résidence : choisie dans le référentiel national, jamais
+              saisie librement — deux orthographes de la même commune la
+              rendraient impossible à regrouper dans les statistiques. */}
+          <SelecteurVille
+            valeur={villeId}
+            onChange={setVilleId}
+            label="Ville"
+            facultatif
           />
 
           <ChampDateNaissance

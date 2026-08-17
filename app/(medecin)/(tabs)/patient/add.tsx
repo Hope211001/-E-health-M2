@@ -9,6 +9,7 @@ import { auth } from '../../../../api/firebase';
 import { InfoIdentifiants } from '../../../../components/InfoIdentifiants';
 import PhotoProfilPicker from '../../../../components/PhotoProfilPicker';
 import SelecteurSexe from '../../../../components/SelecteurSexe';
+import SelecteurVille from '../../../../components/SelecteurVille';
 import ChampDateNaissance from '../../../../components/ChampDateNaissance';
 import type { Sexe } from '../../../../types/collection';
 import { Colors } from '@/constants/theme';
@@ -47,6 +48,8 @@ export default function AddPatient() {
   });
   const [photo, setPhoto] = useState('');
   const [sexe, setSexe] = useState<Sexe | ''>('');
+  // Référence vers le référentiel `villes` ; facultative sur un compte.
+  const [villeId, setVilleId] = useState('');
   // Tenue hors du formulaire zod : la saisie 'JJ/MM/AAAA' est convertie à
   // l'envoi seulement, une date en cours de frappe n'ayant pas de forme ISO.
   const [naissance, setNaissance] = useState('');
@@ -100,6 +103,7 @@ export default function AddPatient() {
         sexe,
         dateNaissance,
         adresse: propre.adresse,
+        villeId,
         photo,
       });
 
@@ -175,6 +179,16 @@ export default function AddPatient() {
           />
 
           <SelecteurSexe valeur={sexe} onChange={setSexe} />
+
+          {/* Ville de résidence : choisie dans le référentiel national, jamais
+              saisie librement — deux orthographes de la même commune la
+              rendraient impossible à regrouper dans les statistiques. */}
+          <SelecteurVille
+            valeur={villeId}
+            onChange={setVilleId}
+            label="Ville"
+            facultatif
+          />
 
           <ChampDateNaissance valeur={naissance} onChange={setNaissance} />
 

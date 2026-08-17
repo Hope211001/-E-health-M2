@@ -13,6 +13,7 @@ import { Sexe, User } from '../../../types/collection';
 import { InfoIdentifiants } from '../../../components/InfoIdentifiants';
 import PhotoProfilPicker from '../../../components/PhotoProfilPicker';
 import SelecteurSexe from '../../../components/SelecteurSexe';
+import SelecteurVille from '../../../components/SelecteurVille';
 import ChampDateNaissance from '../../../components/ChampDateNaissance';
 import { Colors, Radius, Shadows, Spacing } from '@/constants/theme';
 import { versISO } from '@/utils/dateNaissance';
@@ -54,6 +55,8 @@ export default function PatientAddScreen() {
   });
   const [photo, setPhoto] = useState('');
   const [sexe, setSexe] = useState<Sexe | ''>('');
+  // Référence vers le référentiel `villes` ; facultative sur un compte.
+  const [villeId, setVilleId] = useState('');
   // Hors du formulaire zod : la saisie 'JJ/MM/AAAA' n'est convertie qu'à
   // l'envoi, une date en cours de frappe n'ayant pas de forme ISO.
   const [naissance, setNaissance] = useState('');
@@ -115,6 +118,7 @@ export default function PatientAddScreen() {
         sexe,
         dateNaissance,
         adresse: propre.adresse,
+        villeId,
         photo,
       });
 
@@ -201,6 +205,16 @@ export default function PatientAddScreen() {
           onChange={setSexe}
           couleur={Colors.patient}
           fond={Colors.patientBg}
+        />
+
+        {/* Ville de résidence : choisie dans le référentiel national, jamais
+            saisie librement — deux orthographes de la même commune la
+            rendraient impossible à regrouper dans les statistiques. */}
+        <SelecteurVille
+          valeur={villeId}
+          onChange={setVilleId}
+          label="Ville"
+          facultatif
         />
 
         <ChampDateNaissance

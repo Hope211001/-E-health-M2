@@ -15,7 +15,14 @@ export default function Rappels() {
   const fetchAlertes = async () => {
     try {
       const data = await prescriptionService.getAlertesToday();
-      setAlertes(data);
+      // Décroissant : la prise la plus tardive en tête. L'API renvoie l'ordre
+      // chronologique — c'est le bon ordre pour un planning, mais pas pour
+      // cette liste, qu'on consulte surtout en fin de journée : les doses du
+      // matin, déjà prises, repoussaient la dose en cours hors de l'écran.
+      // Le tri est fait ici et non côté serveur : c'est un choix d'affichage.
+      setAlertes([...data].sort((a, b) =>
+        String(b.heurePrevu).localeCompare(String(a.heurePrevu))
+      ));
     } catch (error) {
       console.error(error);
       Toast.show({ type: 'error', text1: 'Erreur', text2: 'Impossible de charger les rappels' });

@@ -8,7 +8,7 @@ import { dossierService, DossierMedecin } from '../../../api/dossierService';
 import { PrescriptionsListe, formatDateCourte } from '../../../components/PrescriptionsListe';
 import { APP_ROUTES } from '@/constants/routes';
 import { Colors, Radius, Shadows, Spacing } from '@/constants/theme';
-import { origineCompte } from '@/utils/roles';
+import { libelleEtablissement, origineCompte } from '@/utils/roles';
 import { dateNaissanceAvecAge } from '@/utils/dateNaissance';
 import AvatarUtilisateur from '../../../components/AvatarUtilisateur';
 import AppHeader from '../../../components/AppHeader';
@@ -156,6 +156,15 @@ export default function DossierMedecinScreen() {
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Inscrit le</Text>
             <Text style={styles.infoValeur}>{formatDateCourte(dossier.dateCreation) ?? '—'}</Text>
+          </View>
+          {/* Établissement où le praticien exerce aujourd'hui. Ses patients n'y
+              sont pas nécessairement tous rattachés : une mutation ne les
+              emporte pas avec elle. */}
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Exerce à</Text>
+            <Text style={styles.infoValeur}>
+              {libelleEtablissement(dossier.etablissement, 'medecin')}
+            </Text>
           </View>
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Créé par</Text>

@@ -37,6 +37,28 @@ class PatientService extends ClientService {
         return response.data;
     }
 
+    /**
+     * Transfère un patient vers un autre établissement, avec un nouveau médecin
+     * traitant sur place. Administration uniquement.
+     *
+     * Les deux valeurs bougent ensemble et volontairement : un patient rattaché
+     * à un hôpital sans praticien pour le suivre n'aurait personne pour lire ses
+     * alertes de prise ni renouveler son traitement. L'opération laisse une
+     * trace (`transfereLe`, `transferePar`, `etablissementPrecedent`) — sans
+     * quoi on ne pourrait pas répondre à « ce patient a-t-il toujours été suivi
+     * ici ? ».
+     *
+     * Les ordonnances passées ne suivent pas : elles restent attachées à
+     * l'établissement qui les a émises.
+     */
+    async transferer(
+        id: string,
+        donnees: { etablissementId: string; medecinTraitantId: string; motif?: string },
+    ): Promise<Patient> {
+        const response = await this.api.patch<Patient>(`/patients/${id}/transfert`, donnees);
+        return response.data;
+    }
+
 }
 
 export const patientService = new PatientService();

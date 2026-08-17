@@ -12,10 +12,13 @@ import { authService } from '../../../api/authService';
 import { InfoIdentifiants } from '../../../components/InfoIdentifiants';
 import PhotoProfilPicker from '../../../components/PhotoProfilPicker';
 import SelecteurSexe from '../../../components/SelecteurSexe';
+import SelecteurVille from '../../../components/SelecteurVille';
+import SelecteurEtablissement from '../../../components/SelecteurEtablissement';
 import ChampDateNaissance from '../../../components/ChampDateNaissance';
 import type { Sexe } from '../../../types/collection';
 import { Colors, Radius, Shadows, Spacing } from '@/constants/theme';
 import { versISO } from '@/utils/dateNaissance';
+import { useAuth } from '../../../hooks/useAuth';
 
 // Pas de champ mot de passe : le backend en génère un et l'envoie au médecin
 // par email. Personne d'autre que lui ne le connaît, pas même le superadmin
@@ -42,11 +45,18 @@ const schema = z.object({
 
 export default function MedecinAddScreen() {
   const router = useRouter();
+  const { user } = useAuth();
+  const estSuperadmin = user?.role === 'superadmin';
   const [form, setForm] = useState({
     email: '', tel: '', nom: '', prenom: '', ordre: '', specialite: '', adresse: '',
   });
   const [photo, setPhoto] = useState('');
   const [sexe, setSexe] = useState<Sexe | ''>('');
+  // Référence vers le référentiel `villes` ; facultative sur un compte.
+  const [villeId, setVilleId] = useState('');
+  // Renseigné par le sélecteur uniquement pour un superadmin ; un admin
+  // transmet le sien d'office et le backend ignore ce champ.
+  const [etablissementId, setEtablissementId] = useState('');
   // Hors du formulaire zod : la saisie 'JJ/MM/AAAA' n'est convertie qu'à
   // l'envoi, une date en cours de frappe n'ayant pas de forme ISO.
   const [naissance, setNaissance] = useState('');
@@ -75,6 +85,18 @@ export default function MedecinAddScreen() {
       return;
     }
 
+    // Le superadmin n'a pas d'établissement à transmettre : il doit désigner
+    // celui où ce médecin exerce, sinon le compte serait créé hors de tout
+    // périmètre et invisible dans les listes.
+    if (estSuperadmin && !etablissementId) {
+      Toast.show({
+        type: 'error',
+        text1: 'Établissement requis',
+        text2: 'Choisissez la structure où ce médecin exerce.',
+      });
+      return;
+    }
+
     setLoading(true);
     try {
       // Valeurs nettoyées par zod, pas la saisie brute.
@@ -85,7 +107,7 @@ export default function MedecinAddScreen() {
         propre.ordre,
         {
           nom: propre.nom, prenom: propre.prenom, photo, sexe,
-          dateNaissance, adresse: propre.adresse,
+          dateNaissance, adresse: propre.adresse, etablissementId, villeId,
         },
       );
 
@@ -157,7 +179,27 @@ export default function MedecinAddScreen() {
 
           <SelecteurSexe valeur={sexe} onChange={setSexe} />
 
+          {/* Ville de résidence : choisie dans le référentiel national, jamais
+              saisie librement — deux orthographes de la même commune la
+              rendraient impossible à regrouper dans les statistiques. */}
+          <SelecteurVille
+            valeur={villeId}
+            onChange={setVilleId}
+            label="Ville"
+            facultatif
+          />
+
           <ChampDateNaissance valeur={naissance} onChange={setNaissance} />
+
+          {/* Superadmin : liste des établissements actifs. Admin : rappel du
+              sien, sans choix — il ne peut pas recruter pour un autre hôpital. */}
+          <SelecteurEtablissement
+            valeur={etablissementId}
+            onChange={setEtablissementId}
+            role={user?.role}
+            couleur={Colors.primary}
+            fond={Colors.primaryBg}
+          />
 
           <Field label="Email" value={form.email} onChangeText={update('email')} keyboardType="email-address" />
 

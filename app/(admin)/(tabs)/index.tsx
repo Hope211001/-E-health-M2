@@ -185,6 +185,25 @@ export default function AdminDashboard() {
             <Ionicons name="chevron-forward" size={22} color="white" />
           </TouchableOpacity>
 
+          {/* Établissements : réservé au superadmin, et placé AVANT « ajouter un
+              admin » parce que c'est l'ordre réel des opérations — un admin ne
+              peut pas être créé sans établissement à lui confier. */}
+          {isSuperadmin && (
+            <TouchableOpacity
+              onPress={() => router.push(APP_ROUTES.ADMIN.ETABLISSEMENTS as Href)}
+              className="bg-violet-800 p-6 rounded-[35px] flex-row items-center shadow-xl shadow-violet-100"
+            >
+              <View className="bg-white/20 w-16 h-16 rounded-2xl items-center justify-center mr-4">
+                <Ionicons name="business" size={30} color="white" />
+              </View>
+              <View className="flex-1">
+                <Text className="text-white font-black text-lg">Établissements</Text>
+                <Text className="text-violet-100 text-xs font-bold mt-0.5">Structures de santé enrôlées sur la plateforme</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={22} color="white" />
+            </TouchableOpacity>
+          )}
+
           {isSuperadmin && (
             <TouchableOpacity
               onPress={() => router.push(APP_ROUTES.ADMIN.ADMIN_ADD as Href)}

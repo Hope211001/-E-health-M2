@@ -4,7 +4,9 @@
  * Libellés des rôles et formatage de la trace « créé par », partagés par les
  * écrans qui affichent des comptes (liste des utilisateurs, dossiers, profil).
  */
-import type { AuthProvider, Createur, UserRole } from '@/types/collection';
+import type {
+  AuthProvider, Createur, EtablissementResolu, UserRole,
+} from '@/types/collection';
 
 /**
  * Forme minimale attendue pour décrire l'origine d'un compte.
@@ -66,6 +68,43 @@ export function iconeOrigine(compte: CompteTracable) {
   return compte.authProvider === 'google'
     ? ('logo-google' as const)
     : ('help-circle-outline' as const);
+}
+
+/**
+ * Phrase décrivant le rattachement d'un compte, par exemple :
+ *   « CHU Joseph Ravoahangy — Antananarivo »
+ *   « Portée nationale »            (superadmin)
+ *   « Non rattaché »                (compte antérieur, ou inscription Google)
+ *   « Établissement supprimé »      (anomalie réelle)
+ *
+ * Les trois premiers cas ne sont pas des erreurs et ne doivent pas être
+ * présentés comme telles : un superadmin n'a légitimement aucun établissement,
+ * et un compte antérieur au multi-établissement n'en a jamais porté.
+ */
+export function libelleEtablissement(
+  etablissement?: EtablissementResolu | null,
+  role?: UserRole | null,
+): string {
+  if (etablissement) {
+    if (!etablissement.existe) return 'Établissement supprimé';
+    // `ville` est un bloc résolu, pas une chaîne : l'établissement ne stocke
+    // qu'un `villeId`, l'API relit le libellé. Le passer directement à `join`
+    // afficherait « [object Object] ».
+    const lieu = [etablissement.nom, etablissement.ville?.nom].filter(Boolean).join(' — ');
+    return etablissement.statut === 'inactif' ? `${lieu} (désactivé)` : lieu;
+  }
+  return role === 'superadmin' ? 'Portée nationale' : 'Non rattaché';
+}
+
+/** Icône illustrant le rattachement d'un compte. */
+export function iconeEtablissement(
+  etablissement?: EtablissementResolu | null,
+  role?: UserRole | null,
+) {
+  if (etablissement) {
+    return etablissement.existe ? ('business-outline' as const) : ('alert-circle-outline' as const);
+  }
+  return role === 'superadmin' ? ('globe-outline' as const) : ('help-circle-outline' as const);
 }
 
 /**

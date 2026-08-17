@@ -13,7 +13,7 @@ import {
 } from '../../api/notificationLocal';
 import Toast from 'react-native-toast-message';
 import { imprimerOrdonnance, partagerOrdonnancePdf } from '@/utils/printOrdonnance';
-import { getMedecinLabel, getPatientEntete } from '@/utils/ordonnanceLabels';
+import { getEtablissementEntete, getMedecinLabel, getPatientEntete } from '@/utils/ordonnanceLabels';
 
 const DEFAUT_HORAIRES = { matin: '08:00', midi: '12:00', soir: '20:00' };
 
@@ -78,15 +78,19 @@ export default function DetailPrescription() {
   const handleExport = async (mode: 'print' | 'share') => {
     try {
       setPrinting(true);
-      const [patient, medecinLabel] = await Promise.all([
+      const [patient, medecinLabel, etablissement] = await Promise.all([
         getPatientEntete(prescription.patientId || auth.currentUser?.uid),
         getMedecinLabel(prescription.medecinId),
+        getEtablissementEntete(prescription.etablissementId, prescription.medecinId),
       ]);
       const document = {
         ...prescription,
         patientLabel: patient.label,
         patientDetail: patient.details,
         medecinLabel,
+        etablissementLabel: etablissement.label,
+        etablissementDetail: etablissement.details,
+        etablissementContact: etablissement.contact,
       };
       await (mode === 'print' ? imprimerOrdonnance(document) : partagerOrdonnancePdf(document));
     } catch (error: any) {
@@ -151,7 +155,17 @@ export default function DetailPrescription() {
       if (!user) return;
 
       // Démarrer la prescription en envoyant les horaires propres à cette ordonnance
-      await prescriptionService.startPrescription(prescription.id, horaires);
+      const demarrage = await prescriptionService.startPrescription(prescription.id, horaires);
+
+      // Le serveur saute les prises dont l'heure est déjà passée : la première
+      // dose peut donc être ce soir, ou demain matin. Le dire explicitement
+      // évite de laisser croire qu'un rappel va sonner dans la minute.
+      const premiere = demarrage?.premierePrise ? new Date(demarrage.premierePrise) : null;
+      const quandPremiere = premiere
+        ? premiere.toDateString() === new Date().toDateString()
+          ? `Première prise aujourd'hui à ${premiere.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`
+          : `Première prise demain à ${premiere.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`
+        : null;
 
       // Planifier les notifications locales sur le téléphone
       const granted = await requestNotificationPermission();
@@ -165,7 +179,8 @@ export default function DetailPrescription() {
         Toast.show({
           type: 'success',
           text1: 'Traitement démarré !',
-          text2: `${count} rappel${count > 1 ? 's' : ''} programmé${count > 1 ? 's' : ''} sur votre téléphone`,
+          text2: quandPremiere
+            ?? `${count} rappel${count > 1 ? 's' : ''} programmé${count > 1 ? 's' : ''} sur votre téléphone`,
         });
       } else {
         Toast.show({

@@ -56,5 +56,11 @@ export const APP_ROUTES = {
     // dossiers, un compte admin n'ayant ni patients ni ordonnances.
     COMPTE_DETAIL: "/(admin)/(tabs)/compte-detail",
     GRAPHES: "/(admin)/(tabs)/graphes",
+    // Structures de santé enrôlées dans la plateforme — superadmin uniquement.
+    ETABLISSEMENTS: "/(admin)/(tabs)/etablissements",
+    // Enrôlement ou modification : ?id=<etablissementId> bascule en édition.
+    ETABLISSEMENT_FORM: "/(admin)/(tabs)/etablissement-form",
+    // Transfert d'un patient vers un autre établissement : attend ?id=<uid>
+    PATIENT_TRANSFERT: "/(admin)/(tabs)/patient-transfert",
   },
 } as const;

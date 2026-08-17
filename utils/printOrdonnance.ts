@@ -38,6 +38,20 @@ export type OrdonnanceAImprimer = {
   patientDetail?: string;
   /** Nom du médecin prescripteur */
   medecinLabel?: string;
+  /**
+   * Établissement émetteur — le nom de la structure qui délivre l'ordonnance.
+   *
+   * C'est l'en-tête au sens propre : sur une ordonnance papier, c'est ce qui
+   * identifie d'où vient la prescription, et ce que le pharmacien lit en
+   * premier pour la valider. Absent des ordonnances antérieures au
+   * multi-établissements — le bloc disparaît alors du document plutôt que
+   * d'afficher un libellé vide.
+   */
+  etablissementLabel?: string;
+  /** « CSB II · Antananarivo ». */
+  etablissementDetail?: string;
+  /** Adresse et téléphone de la structure, repris en pied de page. */
+  etablissementContact?: string;
 };
 
 /**
@@ -104,6 +118,10 @@ export const buildOrdonnanceHtml = (ord: OrdonnanceAImprimer): string => {
         }
         .marque { font-size: 26px; font-weight: 800; color: #059669; letter-spacing: -0.5px; }
         .sous-marque { font-size: 11px; color: #64748b; margin-top: 2px; }
+        /* L'établissement se lit comme l'en-tête du document, pas comme une
+           métadonnée : il est donc plus gros que la ligne de plateforme. */
+        .etablissement { font-size: 14px; font-weight: 700; color: #0f172a; margin-top: 10px; }
+        .etablissement-detail { font-size: 10px; color: #64748b; margin-top: 2px; }
         .meta { text-align: right; font-size: 11px; color: #475569; line-height: 1.6; }
         .meta b { color: #0f172a; }
         .titre {
@@ -145,6 +163,12 @@ export const buildOrdonnanceHtml = (ord: OrdonnanceAImprimer): string => {
         <div>
           <div class="marque">Mediora</div>
           <div class="sous-marque">Plateforme de suivi médical</div>
+          ${
+            ord.etablissementLabel
+              ? `<div class="etablissement">${escapeHtml(ord.etablissementLabel)}</div>
+                 ${ord.etablissementDetail ? `<div class="etablissement-detail">${escapeHtml(ord.etablissementDetail)}</div>` : ''}`
+              : ''
+          }
         </div>
         <div class="meta">
           <div>Émise le <b>${formatDate(ord.dateCreation)}</b></div>
@@ -202,6 +226,11 @@ export const buildOrdonnanceHtml = (ord: OrdonnanceAImprimer): string => {
       </div>
 
       <div class="pied">
+        ${
+          ord.etablissementLabel
+            ? `<b>${escapeHtml(ord.etablissementLabel)}</b>${ord.etablissementContact ? ` — ${escapeHtml(ord.etablissementContact)}` : ''}<br />`
+            : ''
+        }
         Document généré par Mediora — à présenter en pharmacie.<br />
         Ne pas modifier les doses sans avis médical.
       </div>

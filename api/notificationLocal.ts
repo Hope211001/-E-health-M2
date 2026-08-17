@@ -1,5 +1,7 @@
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
+import { prescriptionService } from './prescriptionService';
+import { empiler, rejouer, type PriseEnAttente } from './prisesEnAttente';
 
 // Détecte si on tourne dans Expo Go (l'app jaune) — depuis SDK 53, expo-notifications
 // n'y est plus supporté et l'import au top-level crashe. On charge donc le module
@@ -84,18 +86,93 @@ export async function registerNotificationCategories(): Promise<void> {
 }
 
 /**
- * Écoute le clic sur le bouton « J'ai pris » et coupe l'alarme (retire la
- * notification). À appeler une fois au démarrage (voir app/_layout.tsx).
- * Retourne une fonction de nettoyage, ou undefined en Expo Go.
+ * Transmet une prise au serveur, ou la met en file d'attente si l'envoi échoue.
+ *
+ * Toujours par le CONTEXTE (prescription + moment + médicament) et non par un
+ * identifiant d'alerte : une notification est programmée sur le téléphone au
+ * démarrage du traitement, bien avant de savoir quel id le serveur donnera à
+ * l'alerte du jour.
  */
-export function setupRappelResponseHandler(): (() => void) | undefined {
+async function declarerPrise(prise: PriseEnAttente | Omit<PriseEnAttente, 'declareeLe'>) {
+  try {
+    await prescriptionService.marquerPrisParContexte({
+      prescriptionId: prise.prescriptionId,
+      moment: prise.moment,
+      nomMedicament: prise.nomMedicament,
+    });
+  } catch (e) {
+    // Le patient a appuyé depuis le volet de notifications, sans ouvrir l'app :
+    // aucun message d'erreur ne peut lui être montré. Perdre la déclaration
+    // ferait basculer l'alerte en « manqué » alors qu'il a bien répondu.
+    console.warn('Prise non transmise, mise en attente :', e);
+    await empiler({
+      prescriptionId: prise.prescriptionId,
+      moment: prise.moment,
+      nomMedicament: prise.nomMedicament,
+    });
+  }
+}
+
+/**
+ * Rejoue les prises déclarées hors ligne. À appeler au démarrage de
+ * l'application, quand le réseau est en général revenu.
+ */
+export async function transmettrePrisesEnAttente(): Promise<void> {
+  await rejouer(declarerPrise);
+}
+
+/**
+ * Écoute les réponses aux notifications de rappel. À appeler une fois au
+ * démarrage (voir app/_layout.tsx). Retourne une fonction de nettoyage, ou
+ * undefined en Expo Go.
+ *
+ * Trois gestes, trois significations distinctes — la nuance est le cœur de la
+ * fiabilité de l'observance :
+ *
+ *   - « ✅ J'ai pris »  → déclaration explicite du patient : l'alerte passe à
+ *                         `pris` côté serveur, sans ouvrir l'application ;
+ *   - appui sur le corps → « je veux voir » : l'app s'ouvre sur les rappels du
+ *                         jour, rien n'est enregistré ;
+ *   - balayer la notification → « pas maintenant » : l'alarme se tait, rien de
+ *                         plus. Faire compter ce geste comme une prise
+ *                         gonflerait l'observance d'un réflexe — on écarte une
+ *                         notification en réunion ou la nuit sans avoir avalé
+ *                         quoi que ce soit — et le médecin croirait un
+ *                         traitement suivi alors qu'il ne l'est pas.
+ */
+export function setupRappelResponseHandler(
+  onOuvrirRappels?: () => void,
+): (() => void) | undefined {
   if (!Notifications) return undefined;
 
   const sub = Notifications.addNotificationResponseReceivedListener(async (response) => {
+    const data = response.notification.request.content.data as {
+      prescriptionId?: string;
+      moment?: string;
+      nomMedicament?: string;
+    };
+
     if (response.actionIdentifier === ACTION_PRIS) {
+      // Coupe l'alarme AVANT l'appel réseau : celui-ci peut durer, et une
+      // alarme qui continue de sonner pendant ce temps donne l'impression que
+      // l'appui n'a pas été pris en compte.
       const notifId = response.notification.request.identifier;
-      // Coupe l'alarme en retirant la notification affichée.
-      await Notifications?.dismissNotificationAsync(notifId).catch(() => {});
+      await Notifications?.dismissNotificationAsync(notifId).catch(() => { });
+
+      if (data?.prescriptionId) {
+        await declarerPrise({
+          prescriptionId: data.prescriptionId,
+          moment: data.moment,
+          nomMedicament: data.nomMedicament,
+        });
+      }
+      return;
+    }
+
+    // Appui sur le corps de la notification : on ouvre la liste du jour, sans
+    // rien déclarer — le patient vient consulter, pas confirmer.
+    if (response.actionIdentifier === Notifications!.DEFAULT_ACTION_IDENTIFIER) {
+      onOuvrirRappels?.();
     }
   });
 
@@ -192,8 +269,19 @@ export async function schedulePrescriptionNotifications(
 
     const dureeMed = parseInt(String(med.duree)) || p.dureeDefaut;
 
-    for (let jour = 0; jour < dureeMed; jour++) {
+    // Doit refléter exactement ce que le serveur a créé comme alertes (voir
+    // startPrescription) : les prises déjà passées le jour du démarrage sont
+    // sautées — `buildTriggerDate` renvoie null pour une heure écoulée — et le
+    // compte est rattrapé sur un jour supplémentaire. Sans ce report, un
+    // traitement démarré le soir aurait des alertes serveur sans rappel sur le
+    // téléphone les derniers jours.
+    const dosesAttendues = dureeMed * moments.length;
+    let programmees = 0;
+
+    for (let jour = 0; jour <= dureeMed && programmees < dosesAttendues; jour++) {
       for (const moment of moments) {
+        if (programmees >= dosesAttendues) break;
+
         const id = await scheduleAlerteNotification({
           prescriptionId: p.prescriptionId,
           nomMedicament: med.nomMedicament,
@@ -202,7 +290,9 @@ export async function schedulePrescriptionNotifications(
           heurePrevu: p.horaires[moment],
           jourOffset: jour,
         });
-        if (id) ids.push(id);
+        // `null` = heure déjà écoulée : la prise n'est pas comptée, elle sera
+        // reportée sur le jour supplémentaire.
+        if (id) { ids.push(id); programmees++; }
       }
     }
   }

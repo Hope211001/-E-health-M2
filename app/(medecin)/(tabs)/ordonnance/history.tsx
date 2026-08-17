@@ -9,7 +9,7 @@ import { prescriptionService } from '../../../../api/prescriptionService';
 import Toast from 'react-native-toast-message';
 import { APP_ROUTES } from '@/constants/routes';
 import { imprimerOrdonnance } from '@/utils/printOrdonnance';
-import { getMedecinLabel, getPatientEntete } from '@/utils/ordonnanceLabels';
+import { getEtablissementEntete, getMedecinLabel, getPatientEntete } from '@/utils/ordonnanceLabels';
 import AppHeader from '../../../../components/AppHeader';
 
 export default function HistoriquePrescriptions() {
@@ -83,9 +83,10 @@ export default function HistoriquePrescriptions() {
   const handlePrint = async (item: any) => {
     try {
       setPrintingId(item.id);
-      const [patient, medecinLabel] = await Promise.all([
+      const [patient, medecinLabel, etablissement] = await Promise.all([
         getPatientEntete(item.patientId),
         getMedecinLabel(item.medecinId || auth.currentUser?.uid),
+        getEtablissementEntete(item.etablissementId, item.medecinId || auth.currentUser?.uid),
       ]);
       await imprimerOrdonnance({
         ...item,
@@ -95,6 +96,9 @@ export default function HistoriquePrescriptions() {
           || item._patient?.email,
         patientDetail: patient.details,
         medecinLabel,
+        etablissementLabel: etablissement.label,
+        etablissementDetail: etablissement.details,
+        etablissementContact: etablissement.contact,
       });
     } catch (error: any) {
       // L'annulation de la boîte système lève aussi une erreur : on reste discret

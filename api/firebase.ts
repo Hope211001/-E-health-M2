@@ -22,10 +22,7 @@ try {
     persistence: getReactNativePersistence(AsyncStorage),
   });
 } catch {
-  // Si déjà initialisée (rechargement à chaud), on récupère l'instance existante
   auth = getAuth(app);
 }
-
 const db = getFirestore(app);
-
 export { auth, db };

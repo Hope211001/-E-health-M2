@@ -13,12 +13,6 @@ import { APP_ROUTES } from '@/constants/routes';
 import { Colors, Radius, Shadows, Spacing } from '@/constants/theme';
 import AppHeader from '../../../components/AppHeader';
 
-// Webhook n8n qui déclenche le scraping des pharmacies de garde.
-// Configurable via .env.local (EXPO_PUBLIC_SCRAPE_WEBHOOK_URL) ; valeur par défaut en secours.
-const SCRAPE_WEBHOOK_URL =
-  process.env.EXPO_PUBLIC_SCRAPE_WEBHOOK_URL ??
-  'https://n8n.srv903010.hstgr.cloud/webhook/pharmacie-de-garde';
-
 // Formate une date Firestore ({_seconds}/{seconds}) ou une chaîne ISO en "JJ/MM/AAAA à HH:MM".
 function formatDate(ts: any): string | null {
   if (!ts) return null;
@@ -43,7 +37,7 @@ export default function PharmacieGardeListScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
-  // Scraping (webhook n8n)
+  // Import des publications depuis Facebook (backend)
   const [scrapeVisible, setScrapeVisible] = useState(false);
   const [fbUrl, setFbUrl] = useState('https://www.facebook.com/pharmacie.madagascar/');
   const [nbPosts, setNbPosts] = useState('10');
@@ -58,41 +52,46 @@ export default function PharmacieGardeListScreen() {
     const limit = Math.min(100, Math.max(1, parseInt(nbPosts, 10) || 10));
 
     setScraping(true);
-    // On n'attend pas indéfiniment la fin du workflow (scraping long).
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 20000);
     try {
-      const res = await fetch(SCRAPE_WEBHOOK_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          pageUrl: url,
-          resultsLimit: limit,
-          startUrls: [{ url }],
-        }),
-        signal: controller.signal,
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      // Le webhook (Option A « Immediately ») répond un message générique n8n.
-      // On affiche toujours notre message clair en français.
+      const bilan = await pharmacieGardeService.lancerScraping(url, limit);
       setScrapeVisible(false);
+
+      // Bilan détaillé plutôt qu'un « c'est lancé » : l'import est synchrone,
+      // on sait donc exactement ce qui a été fait. « 0 importée, 8 déjà
+      // connues » est une information utile, pas un échec.
+      const lignes = [
+        `${bilan.examinees} publication(s) examinée(s)`,
+        `${bilan.retenues} retenue(s) comme liste de gardes`,
+        `${bilan.importees} nouvelle(s) publication(s) importée(s)`,
+      ];
+      if (bilan.ignorees > 0) lignes.push(`${bilan.ignorees} déjà en base, ignorée(s)`);
+      if (bilan.echecs.length > 0) lignes.push(`${bilan.echecs.length} en échec`);
+
       Alert.alert(
-        '✅ Scraping lancé',
-        'Le scraping est lancé. Veuillez patienter quelques minutes, puis rafraîchissez la liste pour voir le résultat.',
+        bilan.importees > 0 ? '✅ Import terminé' : 'Import terminé',
+        lignes.join('\n')
+          + '\n\nLes nouvelles publications sont masquées : relisez-les avant de les rendre visibles.',
       );
+      load(search.trim());
     } catch (e: any) {
-      if (e?.name === 'AbortError') {
-        // La requête est bien partie ; le workflow continue côté n8n.
+      // Le backend renvoie un message explicite (crédit Apify épuisé, jeton
+      // refusé, page inaccessible…) ; l'afficher tel quel évite un aller-retour
+      // dans les logs du serveur.
+      const timeout = e?.code === 'ECONNABORTED';
+      if (timeout) {
         setScrapeVisible(false);
         Alert.alert(
-          '✅ Scraping lancé',
-          'Le traitement continue côté serveur. Veuillez patienter quelques minutes, puis rafraîchissez la liste.',
+          "⏳ Import toujours en cours",
+          "Le traitement continue côté serveur. Patientez quelques minutes, puis rafraîchissez la liste.",
         );
       } else {
-        Toast.show({ type: 'error', text1: 'Échec', text2: 'Impossible de contacter le webhook.' });
+        Toast.show({
+          type: 'error',
+          text1: 'Import impossible',
+          text2: e?.response?.data?.error || e?.message || "Le scraping a échoué.",
+        });
       }
     } finally {
-      clearTimeout(timer);
       setScraping(false);
     }
   };
@@ -232,7 +231,7 @@ export default function PharmacieGardeListScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Bannière : lancer le scraping Facebook via le webhook n8n */}
+      {/* Bannière : lancer l'import des publications Facebook */}
       <TouchableOpacity style={styles.scrapeBanner} activeOpacity={0.9} onPress={() => setScrapeVisible(true)}>
         <View style={styles.scrapeIcon}>
           <Ionicons name="cloud-download" size={18} color={Colors.admin} />

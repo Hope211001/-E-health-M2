@@ -1,6 +1,17 @@
 import { ClientService } from './clientService';
 import { PharmacieGarde } from '../types/collection';
 
+/** Bilan d'un import de publications depuis Facebook. */
+export interface BilanScraping {
+  examinees: number;
+  retenues: number;
+  importees: number;
+  /** Publications déjà en base : le cas normal, pas une anomalie. */
+  ignorees: number;
+  echecs: { idpost: string; message: string }[];
+  publications: { idpost: string; nbImages: number }[];
+}
+
 export interface PharmacieGardePayload {
   idpost?: string;
   isVisible?: boolean;
@@ -19,6 +30,23 @@ class PharmacieGardeService extends ClientService {
     const response = await this.api.get<PharmacieGarde[]>('/pharmacie-garde', {
       params: q ? { q } : undefined,
     });
+    return response.data;
+  }
+
+  /**
+   * Importe les publications d'une page Facebook : scraping, tri par un modèle,
+   * ré-hébergement des images et écriture en base — le tout côté backend.
+   *
+   * Long par nature (le scraping attend la fin de l'actor, puis chaque
+   * publication retenue enchaîne un appel de modèle et un upload), d'où le
+   * délai d'attente allongé pour cette seule requête.
+   */
+  async lancerScraping(pageUrl: string, resultsLimit: number): Promise<BilanScraping> {
+    const response = await this.api.post<BilanScraping>(
+      '/pharmacie-garde/scraping',
+      { pageUrl, resultsLimit },
+      { timeout: 300000 },
+    );
     return response.data;
   }
 

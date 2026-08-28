@@ -78,14 +78,14 @@ export default function OcrScreen() {
         text1: nouveau ? 'OCR terminé' : 'Aucun résultat',
         text2: nouveau
           ? `${nouveau.nbPharmacies} pharmacie(s) extraite(s)`
-          : "Le workflow n'a rien enregistré pour cette publication.",
+          : "Aucune pharmacie n'a pu être lue sur cette publication.",
       });
     } catch (error: any) {
       Toast.show({
         type: 'error',
         text1: 'OCR impossible',
-        // L'appel au webhook n8n n'est pas une requête axios : le message utile
-        // est dans error.message, pas dans error.response.
+        // Le backend renvoie un message explicite (quota épuisé, modèle
+        // indisponible, affiche sans image…) : bien plus utile qu'un code HTTP.
         text2: error.response?.data?.error || error.message || "L'analyse de l'image a échoué",
       });
     } finally {

@@ -27,65 +27,36 @@ export interface ResultatOcr {
   dateModification: any;
 }
 
-// Webhook n8n qui lance l'OCR. Configurable via .env.local ; valeur par défaut
-// en secours, comme pour le webhook de scraping.
-const OCR_WEBHOOK_URL =
-  process.env.EXPO_PUBLIC_OCR_WEBHOOK_URL ??
-  'https://n8n.srv903010.hstgr.cloud/webhook/ocr-pharmacie-garde';
-
 /**
- * Le workflow analyse les images une par une : plusieurs affiches prennent du
+ * Le backend analyse les images une par une : plusieurs affiches prennent du
  * temps. Au-delà de ce délai on rend la main plutôt que de laisser l'écran
- * bloqué — le traitement, lui, continue côté n8n.
+ * bloqué — le traitement, lui, continue côté serveur.
  */
 const DELAI_MAX_MS = 180000;
 
 /**
  * OCR des affiches de pharmacies de garde.
  *
- * L'analyse est déléguée à un workflow n8n (webhook), qui appelle le modèle
- * vision et écrit lui-même dans la collection Firestore `ocr`. Aucune clé de
- * modèle ne transite donc par l'application. La lecture des résultats passe,
- * elle, par le backend.
+ * L'analyse est faite par le backend (services/ocrPharmacieGardeService.js),
+ * qui appelle le modèle vision et écrit dans la collection Firestore `ocr`.
+ * Aucune clé de modèle ne transite donc par l'application, où elle serait
+ * extractible du bundle.
  */
 class OcrService extends ClientService {
   /**
-   * Déclenche le workflow n8n, puis relit le résultat via le backend : on
-   * affiche ainsi ce qui a réellement été enregistré dans Firestore, et non
-   * ce que le webhook prétend avoir fait.
+   * Lance l'analyse et renvoie le résultat enregistré.
+   *
+   * Le backend lit les images une par une : plusieurs affiches prennent du
+   * temps, d'où le délai d'attente allongé pour cette seule requête. Passé ce
+   * délai, l'analyse se poursuit côté serveur — on rend simplement la main.
    */
   async generer(pharmacieGardeId: string): Promise<ResultatOcr | null> {
-    const controleur = new AbortController();
-    const minuteur = setTimeout(() => controleur.abort(), DELAI_MAX_MS);
-
-    try {
-      const reponse = await fetch(OCR_WEBHOOK_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pharmacieGardeId }),
-        signal: controleur.signal,
-      });
-
-      if (!reponse.ok) {
-        // n8n renvoie le détail de l'erreur du nœud fautif : bien plus utile
-        // qu'un simple code HTTP pour comprendre ce qui a échoué.
-        const detail = await reponse.text().catch(() => '');
-        throw new Error(
-          detail.slice(0, 200) || `Le workflow n8n a répondu ${reponse.status}.`
-        );
-      }
-    } catch (erreur: any) {
-      if (erreur?.name === 'AbortError') {
-        throw new Error(
-          "Le workflow prend plus de temps que prévu. Il continue côté serveur : rouvrez cet écran dans une minute.",
-        );
-      }
-      throw erreur;
-    } finally {
-      clearTimeout(minuteur);
-    }
-
-    return this.getPourPharmacieGarde(pharmacieGardeId);
+    const response = await this.api.post<ResultatOcr>(
+      `/ocr/pharmacie-garde/${pharmacieGardeId}`,
+      {},
+      { timeout: DELAI_MAX_MS },
+    );
+    return response.data;
   }
 
   /** Résultat déjà enregistré, ou null si la publication n'a jamais été analysée. */
